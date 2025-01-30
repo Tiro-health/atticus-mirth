@@ -1,0 +1,501 @@
+<channel version="4.5.2">
+  <id>8aba939b-e0c1-4c62-9dc1-963b7b502af2</id>
+  <nextMetaDataId>2</nextMetaDataId>
+  <name>Hl7v2ToFHIR</name>
+  <description></description>
+  <revision>42</revision>
+  <sourceConnector version="4.5.2">
+    <metaDataId>0</metaDataId>
+    <name>sourceConnector</name>
+    <properties class="com.mirth.connect.connectors.file.FileReceiverProperties" version="4.5.2">
+      <pluginProperties/>
+      <pollConnectorProperties version="4.5.2">
+        <pollingType>INTERVAL</pollingType>
+        <pollOnStart>true</pollOnStart>
+        <pollingFrequency>5000</pollingFrequency>
+        <pollingHour>0</pollingHour>
+        <pollingMinute>0</pollingMinute>
+        <cronJobs/>
+        <pollConnectorPropertiesAdvanced>
+          <weekly>true</weekly>
+          <inactiveDays>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+            <boolean>false</boolean>
+          </inactiveDays>
+          <dayOfMonth>1</dayOfMonth>
+          <allDay>true</allDay>
+          <startingHour>8</startingHour>
+          <startingMinute>0</startingMinute>
+          <endingHour>17</endingHour>
+          <endingMinute>0</endingMinute>
+        </pollConnectorPropertiesAdvanced>
+      </pollConnectorProperties>
+      <sourceConnectorProperties version="4.5.2">
+        <responseVariable>None</responseVariable>
+        <respondAfterProcessing>true</respondAfterProcessing>
+        <processBatch>false</processBatch>
+        <firstResponse>false</firstResponse>
+        <processingThreads>1</processingThreads>
+        <resourceIds class="linked-hash-map">
+          <entry>
+            <string>Default Resource</string>
+            <string>[Default Resource]</string>
+          </entry>
+        </resourceIds>
+        <queueBufferSize>1000</queueBufferSize>
+      </sourceConnectorProperties>
+      <scheme>FILE</scheme>
+      <host>FILL ME</host>
+      <fileFilter>*.hl7</fileFilter>
+      <regex>false</regex>
+      <directoryRecursion>false</directoryRecursion>
+      <ignoreDot>true</ignoreDot>
+      <anonymous>true</anonymous>
+      <username>anonymous</username>
+      <password>anonymous</password>
+      <timeout>10000</timeout>
+      <secure>true</secure>
+      <passive>true</passive>
+      <validateConnection>true</validateConnection>
+      <afterProcessingAction>MOVE</afterProcessingAction>
+      <moveToDirectory>FILL ME</moveToDirectory>
+      <moveToFileName></moveToFileName>
+      <errorReadingAction>MOVE</errorReadingAction>
+      <errorResponseAction>MOVE</errorResponseAction>
+      <errorMoveToDirectory>FILL ME</errorMoveToDirectory>
+      <errorMoveToFileName></errorMoveToFileName>
+      <checkFileAge>true</checkFileAge>
+      <fileAge>1000</fileAge>
+      <fileSizeMinimum>0</fileSizeMinimum>
+      <fileSizeMaximum></fileSizeMaximum>
+      <ignoreFileSizeMaximum>true</ignoreFileSizeMaximum>
+      <sortBy>date</sortBy>
+      <binary>false</binary>
+      <charsetEncoding>DEFAULT_ENCODING</charsetEncoding>
+    </properties>
+    <transformer version="4.5.2">
+      <elements>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.5.2">
+          <sequenceNumber>0</sequenceNumber>
+          <enabled>true</enabled>
+          <script>// Extract data from HL7v2 message
+var hl7Message = msg;
+logger.info(&apos;Incoming HL7: &apos; + hl7Message);
+
+var patientIdValue = hl7Message[&apos;PID&apos;][&apos;PID.3&apos;][&apos;PID.3.1&apos;].toString();
+var patientIdSystem = hl7Message[&apos;PID&apos;][&apos;PID.3&apos;][&apos;PID.3.4&apos;].toString();
+var patientFamilyName = hl7Message[&apos;PID&apos;][&apos;PID.5&apos;][&apos;PID.5.1&apos;].toString();
+var patientGivenName = hl7Message[&apos;PID&apos;][&apos;PID.5&apos;][&apos;PID.5.2&apos;].toString();
+var genderRaw = hl7Message[&apos;PID&apos;][&apos;PID.8&apos;][&apos;PID.8.1&apos;].toString();
+var birthdateRaw = hl7Message[&apos;PID&apos;][&apos;PID.7&apos;][&apos;PID.7.1&apos;].toString();
+
+var encounterStatusRaw = hl7Message[&apos;PV1&apos;][&apos;PV1.2&apos;][&apos;PV1.2.1&apos;].toString(); 
+var encounterIdValue = hl7Message[&apos;PV1&apos;][&apos;PV1.19&apos;][&apos;PV1.19.1&apos;].toString();
+var encounterIdSystem = hl7Message[&apos;PV1&apos;][&apos;PV1.19&apos;][&apos;PV1.19.4&apos;].toString();
+
+var practitionerIdValue = hl7Message[&apos;PV1&apos;][&apos;PV1.7&apos;][&apos;PV1.7.1&apos;].toString();
+var practitionerIdSystem = hl7Message[&apos;PV1&apos;][&apos;PV1.7&apos;][&apos;PV1.7.14&apos;].toString();
+var practitionerFamilyName = hl7Message[&apos;PV1&apos;][&apos;PV1.7&apos;][&apos;PV1.7.2&apos;].toString();
+var practitionerGivenName = hl7Message[&apos;PV1&apos;][&apos;PV1.7&apos;][&apos;PV1.7.3&apos;].toString();
+var practitionerPrefix = hl7Message[&apos;PV1&apos;][&apos;PV1.7&apos;][&apos;PV1.7.6&apos;].toString(); 
+
+// Create dictionary with the extracted values
+var logData = {
+    patientIdValue: patientIdValue,
+    patientIdSystem: patientIdSystem,
+    patientFamilyName: patientFamilyName,
+    patientGivenName: patientGivenName,
+    genderRaw: genderRaw,
+    birthdateRaw: birthdateRaw,
+    encounterStatusRaw: encounterStatusRaw,
+    encounterIdValue: encounterIdValue,
+    encounterIdSystem: encounterIdSystem,
+    practitionerIdValue: practitionerIdValue,
+    practitionerIdSystem: practitionerIdSystem,
+    practitionerFamilyName: practitionerFamilyName,
+    practitionerGivenName: practitionerGivenName,
+    practitionerPrefix: practitionerPrefix
+};
+
+// Log the dictionary
+logger.info(&apos;Extracted Data: &apos; + JSON.stringify(logData));
+
+// Create Patient Resource
+var patient = {
+    &quot;resourceType&quot;: &quot;Patient&quot;
+};
+if (patientIdSystem &amp;&amp; patientIdValue) {
+    patient.identifier = [{
+        &quot;value&quot;: patientIdValue,
+        &quot;system&quot;: patientIdSystem
+    }];
+}
+else {
+	logger.warn(&quot;Patient has no identifier (no value and/or system)&quot;);
+}
+if (patientFamilyName) {
+    patient.name = patient.name || [{}];
+    patient.name[0].family = patientFamilyName;
+}
+if (patientGivenName) {
+    patient.name = patient.name || [{}];
+    patient.name[0].given = [patientGivenName];
+}
+if (genderRaw) {
+	// Map HL7v2 gender codes to FHIR gender values
+	var genderMap = {
+	    &quot;M&quot;: &quot;male&quot;,
+	    &quot;F&quot;: &quot;female&quot;,
+	    &quot;O&quot;: &quot;other&quot;,
+	    &quot;U&quot;: &quot;unknown&quot;
+	};
+    patient.gender = genderMap[genderRaw];
+}
+if (birthdateRaw) {
+    patient.birthDate = birthdateRaw.substring(0, 4) + &quot;-&quot; + birthdateRaw.substring(4, 6) + &quot;-&quot; + birthdateRaw.substring(6, 8);
+}
+var patientUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+
+// Create Encounter Resource
+var encounter = {
+    &quot;resourceType&quot;: &quot;Encounter&quot;,
+    &quot;identifier&quot;: [{
+        &quot;value&quot;: encounterIdValue,
+        &quot;system&quot;: encounterIdSystem
+    }],
+}
+if (encounterIdSystem &amp;&amp; encounterIdValue) {
+    encounter.identifier = [{
+        &quot;value&quot;: encounterIdValue,
+        &quot;system&quot;: encounterIdSystem
+    }];
+}
+else {
+	logger.warn(&quot;Encounter has no identifier (no value and/or system)&quot;);
+}
+if (encounterStatusRaw) {
+	// Map HL7v2 Encounter Status
+	// https://build.fhir.org/ig/HL7/v2-to-fhir/ConceptMap-table-hl70004-to-encounter-status.html
+	var encounterStatusMap = {
+	    &quot;E&quot;: &quot;in-progress&quot;,
+	    &quot;I&quot;: &quot;in-progress&quot;,
+	    &quot;O&quot;: &quot;in-progress&quot;,
+	    &quot;P&quot;: &quot;planned&quot;,
+	    &quot;R&quot;: &quot;in-progress&quot;,
+	    &quot;B&quot;: &quot;in-progress&quot;,
+	    &quot;C&quot;: &quot;in-progress&quot;,
+	    &quot;N&quot;: &quot;in-progress&quot;,
+	    &quot;U&quot;: &quot;unknown&quot;
+	};
+	encounter.status = encounterStatusMap[encounterStatusRaw];
+}
+if (patientUuid) {
+	encounter.subject = patientUuid;
+} else {
+	logger.error(&quot;Encounter has no subject&quot;);
+}
+var encounterUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+
+// Create Practitioner Resource
+var practitioner = {
+    &quot;resourceType&quot;: &quot;Practitioner&quot;,
+};
+if (patientIdSystem &amp;&amp; patientIdValue) {
+    patient.identifier = [{
+        &quot;value&quot;: patientIdValue,
+        &quot;system&quot;: patientIdSystem
+    }];
+}
+else {
+	logger.warn(&quot;Practitioner has no identifier (no value and/or system)&quot;);
+}
+if (practitionerFamilyName) {
+    practitioner.name = practitioner.name || [{}];
+    practitioner.name[0].family = practitionerFamilyName;
+}
+if (practitionerGivenName) {
+    practitioner.name = practitioner.name || [{}];
+    practitionerent.name[0].given = [practitionerGivenName];
+}
+if (practitionerPrefix) {
+    practitioner.prefix = practitioner.name || [{}];
+    practitionerent.prefix[0].given = [practitionerPrefix];
+}
+var practitionerUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+
+// Create FHIR Bundle
+var bundle = {
+    &quot;resourceType&quot;: &quot;Bundle&quot;,
+    &quot;type&quot;: &quot;transaction&quot;,
+    &quot;entry&quot;: []
+};
+
+if (patientIdSystem &amp;&amp; patientIdValue) {
+    bundle.entry.push({
+        &quot;resource&quot;: patient,
+        &quot;fullUrl&quot;: patientUuid,
+        &quot;request&quot;: {
+            &quot;method&quot;: &quot;PUT&quot;,
+            &quot;url&quot;: &quot;Patient?identifier=&quot; + encodeURIComponent(patientIdSystem + &quot;|&quot; + patientIdValue)
+        }
+    });
+}
+
+if (encounterIdSystem &amp;&amp; encounterIdValue) {
+    bundle.entry.push({
+        &quot;resource&quot;: encounter,
+        &quot;fullUrl&quot;: encounterUuid,
+        &quot;request&quot;: {
+            &quot;method&quot;: &quot;PUT&quot;,
+            &quot;url&quot;: &quot;Encounter?identifier=&quot; + encodeURIComponent(encounterIdSystem + &quot;|&quot; + encounterIdValue)
+        }
+    });
+}
+
+// Conditional update for practitioner is not yet supported...
+// if (practitionerIdSystem &amp;&amp; practitionerIdValue) {
+//     bundle.entry.push({
+//         &quot;resource&quot;: practitioner,
+//         &quot;fullUrl&quot;: practitionerUuid,
+//         &quot;request&quot;: {
+//             &quot;method&quot;: &quot;PUT&quot;,
+//             &quot;url&quot;: &quot;Practitioner?identifier=&quot; + encodeURIComponent(practitionerIdSystem + &quot;|&quot; + practitionerIdValue)
+//         }
+//     });
+
+// Convert bundle to JSON
+var jsonString = JSON.stringify(bundle);
+logger.info(&apos;Outgoing FHIR: &apos; + jsonString);
+// Set the transformed message to the JSON string
+msg = jsonString;</script>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+      </elements>
+      <inboundTemplate encoding="base64"></inboundTemplate>
+      <outboundTemplate encoding="base64"></outboundTemplate>
+      <inboundDataType>HL7V2</inboundDataType>
+      <outboundDataType>JSON</outboundDataType>
+      <inboundProperties class="com.mirth.connect.plugins.datatypes.hl7v2.HL7v2DataTypeProperties" version="4.5.2">
+        <serializationProperties class="com.mirth.connect.plugins.datatypes.hl7v2.HL7v2SerializationProperties" version="4.5.2">
+          <handleRepetitions>true</handleRepetitions>
+          <handleSubcomponents>true</handleSubcomponents>
+          <useStrictParser>false</useStrictParser>
+          <useStrictValidation>false</useStrictValidation>
+          <stripNamespaces>false</stripNamespaces>
+          <segmentDelimiter>\r</segmentDelimiter>
+          <convertLineBreaks>true</convertLineBreaks>
+        </serializationProperties>
+        <deserializationProperties class="com.mirth.connect.plugins.datatypes.hl7v2.HL7v2DeserializationProperties" version="4.5.2">
+          <useStrictParser>false</useStrictParser>
+          <useStrictValidation>false</useStrictValidation>
+          <segmentDelimiter>\r</segmentDelimiter>
+        </deserializationProperties>
+        <batchProperties class="com.mirth.connect.plugins.datatypes.hl7v2.HL7v2BatchProperties" version="4.5.2">
+          <splitType>MSH_Segment</splitType>
+          <batchScript></batchScript>
+        </batchProperties>
+        <responseGenerationProperties class="com.mirth.connect.plugins.datatypes.hl7v2.HL7v2ResponseGenerationProperties" version="4.5.2">
+          <segmentDelimiter>\r</segmentDelimiter>
+          <successfulACKCode>AA</successfulACKCode>
+          <successfulACKMessage></successfulACKMessage>
+          <errorACKCode>AE</errorACKCode>
+          <errorACKMessage>An Error Occurred Processing Message.</errorACKMessage>
+          <rejectedACKCode>AR</rejectedACKCode>
+          <rejectedACKMessage>Message Rejected.</rejectedACKMessage>
+          <msh15ACKAccept>false</msh15ACKAccept>
+          <dateFormat>yyyyMMddHHmmss.SSS</dateFormat>
+        </responseGenerationProperties>
+        <responseValidationProperties class="com.mirth.connect.plugins.datatypes.hl7v2.HL7v2ResponseValidationProperties" version="4.5.2">
+          <successfulACKCode>AA,CA</successfulACKCode>
+          <errorACKCode>AE,CE</errorACKCode>
+          <rejectedACKCode>AR,CR</rejectedACKCode>
+          <validateMessageControlId>true</validateMessageControlId>
+          <originalMessageControlId>Destination_Encoded</originalMessageControlId>
+          <originalIdMapVariable></originalIdMapVariable>
+        </responseValidationProperties>
+      </inboundProperties>
+      <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.5.2">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.5.2">
+          <splitType>JavaScript</splitType>
+          <batchScript></batchScript>
+        </batchProperties>
+      </outboundProperties>
+    </transformer>
+    <filter version="4.5.2">
+      <elements/>
+    </filter>
+    <transportName>File Reader</transportName>
+    <mode>SOURCE</mode>
+    <enabled>true</enabled>
+    <waitForPrevious>true</waitForPrevious>
+  </sourceConnector>
+  <destinationConnectors>
+    <connector version="4.5.2">
+      <metaDataId>1</metaDataId>
+      <name>Atticus Data Import</name>
+      <properties class="com.mirth.connect.connectors.http.HttpDispatcherProperties" version="4.5.2">
+        <pluginProperties/>
+        <destinationConnectorProperties version="4.5.2">
+          <queueEnabled>false</queueEnabled>
+          <sendFirst>false</sendFirst>
+          <retryIntervalMillis>10000</retryIntervalMillis>
+          <regenerateTemplate>false</regenerateTemplate>
+          <retryCount>0</retryCount>
+          <rotate>false</rotate>
+          <includeFilterTransformer>false</includeFilterTransformer>
+          <threadCount>1</threadCount>
+          <threadAssignmentVariable></threadAssignmentVariable>
+          <validateResponse>false</validateResponse>
+          <resourceIds class="linked-hash-map">
+            <entry>
+              <string>Default Resource</string>
+              <string>[Default Resource]</string>
+            </entry>
+          </resourceIds>
+          <queueBufferSize>1000</queueBufferSize>
+          <reattachAttachments>true</reattachAttachments>
+        </destinationConnectorProperties>
+        <host>https://reports.tiro.health/fhir/r5</host>
+        <useProxyServer>false</useProxyServer>
+        <proxyAddress></proxyAddress>
+        <proxyPort></proxyPort>
+        <method>post</method>
+        <headers class="linked-hash-map">
+          <entry>
+            <string>x-user-id</string>
+            <list>
+              <string>FILL ME</string>
+            </list>
+          </entry>
+        </headers>
+        <parameters class="linked-hash-map"/>
+        <useHeadersVariable>false</useHeadersVariable>
+        <headersVariable></headersVariable>
+        <useParametersVariable>false</useParametersVariable>
+        <parametersVariable></parametersVariable>
+        <responseXmlBody>false</responseXmlBody>
+        <responseParseMultipart>true</responseParseMultipart>
+        <responseIncludeMetadata>false</responseIncludeMetadata>
+        <responseBinaryMimeTypes>application/.*(?&lt;!json|xml)$|image/.*|video/.*|audio/.*</responseBinaryMimeTypes>
+        <responseBinaryMimeTypesRegex>true</responseBinaryMimeTypesRegex>
+        <multipart>false</multipart>
+        <useAuthentication>true</useAuthentication>
+        <authenticationType>Basic</authenticationType>
+        <usePreemptiveAuthentication>true</usePreemptiveAuthentication>
+        <username>FILL ME</username>
+        <password>FILL ME</password>
+        <content>${message.rawData}</content>
+        <contentType>application/json</contentType>
+        <dataTypeBinary>false</dataTypeBinary>
+        <charset>DEFAULT_ENCODING</charset>
+        <socketTimeout>30000</socketTimeout>
+      </properties>
+      <transformer version="4.5.2">
+        <elements/>
+        <inboundDataType>JSON</inboundDataType>
+        <outboundDataType>JSON</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </transformer>
+      <responseTransformer version="4.5.2">
+        <elements/>
+        <inboundDataType>JSON</inboundDataType>
+        <outboundDataType>JSON</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.5.2">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </responseTransformer>
+      <filter version="4.5.2">
+        <elements/>
+      </filter>
+      <transportName>HTTP Sender</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <waitForPrevious>true</waitForPrevious>
+    </connector>
+  </destinationConnectors>
+  <preprocessingScript>// Modify the message variable below to pre process data
+return message;</preprocessingScript>
+  <postprocessingScript>// This script executes once after a message has been processed
+// Responses returned from here will be stored as &quot;Postprocessor&quot; in the response map
+return;</postprocessingScript>
+  <deployScript>// This script executes once when the channel is deployed
+// You only have access to the globalMap and globalChannelMap here to persist data
+return;</deployScript>
+  <undeployScript>// This script executes once when the channel is undeployed
+// You only have access to the globalMap and globalChannelMap here to persist data
+return;</undeployScript>
+  <properties version="4.5.2">
+    <clearGlobalChannelMap>true</clearGlobalChannelMap>
+    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <encryptData>false</encryptData>
+    <encryptAttachments>false</encryptAttachments>
+    <encryptCustomMetaData>false</encryptCustomMetaData>
+    <removeContentOnCompletion>false</removeContentOnCompletion>
+    <removeOnlyFilteredOnCompletion>false</removeOnlyFilteredOnCompletion>
+    <removeAttachmentsOnCompletion>false</removeAttachmentsOnCompletion>
+    <initialState>STARTED</initialState>
+    <storeAttachments>true</storeAttachments>
+    <metaDataColumns>
+      <metaDataColumn>
+        <name>SOURCE</name>
+        <type>STRING</type>
+        <mappingName>mirth_source</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>TYPE</name>
+        <type>STRING</type>
+        <mappingName>mirth_type</mappingName>
+      </metaDataColumn>
+    </metaDataColumns>
+    <attachmentProperties version="4.5.2">
+      <type>None</type>
+      <properties/>
+    </attachmentProperties>
+    <resourceIds class="linked-hash-map">
+      <entry>
+        <string>Default Resource</string>
+        <string>[Default Resource]</string>
+      </entry>
+    </resourceIds>
+  </properties>
+  <exportData>
+    <metadata>
+      <enabled>true</enabled>
+      <lastModified>
+        <time>1738161596219</time>
+        <timezone>Europe/Brussels</timezone>
+      </lastModified>
+      <pruningSettings>
+        <archiveEnabled>true</archiveEnabled>
+        <pruneErroredMessages>false</pruneErroredMessages>
+      </pruningSettings>
+      <userId>1</userId>
+    </metadata>
+    <channelTags/>
+  </exportData>
+</channel>
