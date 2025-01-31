@@ -3,7 +3,7 @@
   <nextMetaDataId>2</nextMetaDataId>
   <name>Hl7v2ToFHIR</name>
   <description></description>
-  <revision>42</revision>
+  <revision>62</revision>
   <sourceConnector version="4.5.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -161,14 +161,11 @@ if (birthdateRaw) {
     patient.birthDate = birthdateRaw.substring(0, 4) + &quot;-&quot; + birthdateRaw.substring(4, 6) + &quot;-&quot; + birthdateRaw.substring(6, 8);
 }
 var patientUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+logger.info(&apos;Handled patient resource&apos;);
 
 // Create Encounter Resource
 var encounter = {
-    &quot;resourceType&quot;: &quot;Encounter&quot;,
-    &quot;identifier&quot;: [{
-        &quot;value&quot;: encounterIdValue,
-        &quot;system&quot;: encounterIdSystem
-    }],
+    &quot;resourceType&quot;: &quot;Encounter&quot;
 }
 if (encounterIdSystem &amp;&amp; encounterIdValue) {
     encounter.identifier = [{
@@ -196,24 +193,27 @@ if (encounterStatusRaw) {
 	encounter.status = encounterStatusMap[encounterStatusRaw];
 }
 if (patientUuid) {
-	encounter.subject = patientUuid;
+    encounter.subject = {
+        &quot;reference&quot;: patientUuid
+    };
 } else {
 	logger.error(&quot;Encounter has no subject&quot;);
 }
 var encounterUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+logger.info(&apos;Handled encounter resource&apos;);
 
 // Create Practitioner Resource
 var practitioner = {
     &quot;resourceType&quot;: &quot;Practitioner&quot;,
 };
-if (patientIdSystem &amp;&amp; patientIdValue) {
-    patient.identifier = [{
-        &quot;value&quot;: patientIdValue,
-        &quot;system&quot;: patientIdSystem
+if (practitionerIdSystem &amp;&amp; practitionerIdValue) {
+    practitioner.identifier = [{
+        &quot;value&quot;: practitionerIdValue,
+        &quot;system&quot;: practitionerIdSystem
     }];
 }
 else {
-	logger.warn(&quot;Practitioner has no identifier (no value and/or system)&quot;);
+    logger.warn(&quot;Practitioner has no identifier (no value and/or system)&quot;);
 }
 if (practitionerFamilyName) {
     practitioner.name = practitioner.name || [{}];
@@ -221,13 +221,14 @@ if (practitionerFamilyName) {
 }
 if (practitionerGivenName) {
     practitioner.name = practitioner.name || [{}];
-    practitionerent.name[0].given = [practitionerGivenName];
+    practitioner.name[0].given = [practitionerGivenName];
 }
 if (practitionerPrefix) {
-    practitioner.prefix = practitioner.name || [{}];
-    practitionerent.prefix[0].given = [practitionerPrefix];
+    practitioner.name = practitioner.name || [{}];
+    practitioner.name[0].prefix = [practitionerPrefix];
 }
 var practitionerUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+logger.info(&apos;Handled practitioner resource&apos;);
 
 // Create FHIR Bundle
 var bundle = {
@@ -397,6 +398,8 @@ msg = jsonString;</script>
       </properties>
       <transformer version="4.5.2">
         <elements/>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <outboundTemplate encoding="base64"></outboundTemplate>
         <inboundDataType>JSON</inboundDataType>
         <outboundDataType>JSON</outboundDataType>
         <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.5.2">
@@ -413,7 +416,15 @@ msg = jsonString;</script>
         </outboundProperties>
       </transformer>
       <responseTransformer version="4.5.2">
-        <elements/>
+        <elements>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.5.2">
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script>logger.info(&apos;Response Body: &apos; + responseBody);</script>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        </elements>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <outboundTemplate encoding="base64"></outboundTemplate>
         <inboundDataType>JSON</inboundDataType>
         <outboundDataType>JSON</outboundDataType>
         <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.5.2">
@@ -487,7 +498,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1738161596219</time>
+        <time>1738315960039</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>
@@ -496,6 +507,5 @@ return;</undeployScript>
       </pruningSettings>
       <userId>1</userId>
     </metadata>
-    <channelTags/>
   </exportData>
 </channel>
