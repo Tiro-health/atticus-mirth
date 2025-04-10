@@ -3,7 +3,7 @@
   <nextMetaDataId>2</nextMetaDataId>
   <name>Hl7v2ToFHIR</name>
   <description></description>
-  <revision>62</revision>
+  <revision>85</revision>
   <sourceConnector version="4.5.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -126,161 +126,70 @@ var logData = {
 // Log the dictionary
 logger.info(&apos;Extracted Data: &apos; + JSON.stringify(logData));
 
-// Create Patient Resource
-var patient = {
-    &quot;resourceType&quot;: &quot;Patient&quot;
-};
-if (patientIdSystem &amp;&amp; patientIdValue) {
-    patient.identifier = [{
-        &quot;value&quot;: patientIdValue,
-        &quot;system&quot;: patientIdSystem
-    }];
-}
-else {
-	logger.warn(&quot;Patient has no identifier (no value and/or system)&quot;);
-}
-if (patientFamilyName) {
-    patient.name = patient.name || [{}];
-    patient.name[0].family = patientFamilyName;
-}
-if (patientGivenName) {
-    patient.name = patient.name || [{}];
-    patient.name[0].given = [patientGivenName];
-}
-if (genderRaw) {
-	// Map HL7v2 gender codes to FHIR gender values
-	var genderMap = {
-	    &quot;M&quot;: &quot;male&quot;,
-	    &quot;F&quot;: &quot;female&quot;,
-	    &quot;O&quot;: &quot;other&quot;,
-	    &quot;U&quot;: &quot;unknown&quot;
-	};
-    patient.gender = genderMap[genderRaw];
-}
-if (birthdateRaw) {
-    patient.birthDate = birthdateRaw.substring(0, 4) + &quot;-&quot; + birthdateRaw.substring(4, 6) + &quot;-&quot; + birthdateRaw.substring(6, 8);
-}
-var patientUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
-logger.info(&apos;Handled patient resource&apos;);
+try {
+	// Patient Information
+	channelMap.put(&quot;patientIdValue&quot;, patientIdValue);
+	channelMap.put(&quot;patientIdSystem&quot;, patientIdSystem);
+	channelMap.put(&quot;patientFamilyName&quot;, patientFamilyName); // Optional: Patient&apos;s family/last name
+	channelMap.put(&quot;patientGivenName&quot;, patientGivenName);   // Optional: Patient&apos;s given/first name
+	if (genderRaw) {
+		// Map HL7v2 gender codes to FHIR gender values
+		var genderMap = {
+		    &quot;M&quot;: &quot;male&quot;,
+		    &quot;F&quot;: &quot;female&quot;,
+		    &quot;O&quot;: &quot;other&quot;,
+		    &quot;U&quot;: &quot;unknown&quot;
+		};
+	    channelMap.put(&quot;patientGender&quot;, genderMap[genderRaw]);         // Optional: Patient&apos;s gender (e.g., &quot;male&quot;, &quot;female&quot;)
+	}
+	if (birthdateRaw) {
+		patientBirthDate = birthdateRaw.substring(0, 4) + &quot;-&quot; + birthdateRaw.substring(4, 6) + &quot;-&quot; + birthdateRaw.substring(6, 8);
+		channelMap.put(&quot;patientBirthDate&quot;, patientBirthDate);   // Optional: Patient&apos;s birth date (YYYY-MM-DD)
+	}
 
-// Create Encounter Resource
-var encounter = {
-    &quot;resourceType&quot;: &quot;Encounter&quot;
-}
-if (encounterIdSystem &amp;&amp; encounterIdValue) {
-    encounter.identifier = [{
-        &quot;value&quot;: encounterIdValue,
-        &quot;system&quot;: encounterIdSystem
-    }];
-}
-else {
-	logger.warn(&quot;Encounter has no identifier (no value and/or system)&quot;);
-}
-if (encounterStatusRaw) {
-	// Map HL7v2 Encounter Status
-	// https://build.fhir.org/ig/HL7/v2-to-fhir/ConceptMap-table-hl70004-to-encounter-status.html
-	var encounterStatusMap = {
-	    &quot;E&quot;: &quot;in-progress&quot;,
-	    &quot;I&quot;: &quot;in-progress&quot;,
-	    &quot;O&quot;: &quot;in-progress&quot;,
-	    &quot;P&quot;: &quot;planned&quot;,
-	    &quot;R&quot;: &quot;in-progress&quot;,
-	    &quot;B&quot;: &quot;in-progress&quot;,
-	    &quot;C&quot;: &quot;in-progress&quot;,
-	    &quot;N&quot;: &quot;in-progress&quot;,
-	    &quot;U&quot;: &quot;unknown&quot;
-	};
-	encounter.status = encounterStatusMap[encounterStatusRaw];
-}
-if (patientUuid) {
-    encounter.subject = {
-        &quot;reference&quot;: patientUuid
-    };
-} else {
-	logger.error(&quot;Encounter has no subject&quot;);
-}
-var encounterUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
-logger.info(&apos;Handled encounter resource&apos;);
+	// Encounter Information
+	channelMap.put(&quot;encounterIdValue&quot;, encounterIdValue);
+	channelMap.put(&quot;encounterIdSystem&quot;, encounterIdSystem);
+	if (encounterStatusRaw) {
+		// Map HL7v2 Encounter Status
+		// https://build.fhir.org/ig/HL7/v2-to-fhir/ConceptMap-table-hl70004-to-encounter-status.html
+		var encounterStatusMap = {
+		    &quot;E&quot;: &quot;in-progress&quot;,
+		    &quot;I&quot;: &quot;in-progress&quot;,
+		    &quot;O&quot;: &quot;in-progress&quot;,
+		    &quot;P&quot;: &quot;planned&quot;,
+		    &quot;R&quot;: &quot;in-progress&quot;,
+		    &quot;B&quot;: &quot;in-progress&quot;,
+		    &quot;C&quot;: &quot;in-progress&quot;,
+		    &quot;N&quot;: &quot;in-progress&quot;,
+		    &quot;U&quot;: &quot;unknown&quot;
+		};
+		channelMap.put(&quot;encounterStatus&quot;, encounterStatusMap[encounterStatusRaw]); // Optional: Encounter&apos;s status (e.g., &quot;planned&quot;, &quot;in-progress&quot;)
+	}
+	
+	
+	// Practitioner Information
+	// not supported for now ...
+	//channelMap.put(&quot;practitionerIdValue&quot;, practitionerIdValue);   // Optional: Practitioner identifier value
+	//channelMap.put(&quot;practitionerIdSystem&quot;, practitionerIdSystem);  // Optional: Practitioner identifier system
+	//channelMap.put(&quot;practitionerFamilyName&quot;, practitionerFamilyName); // Optional: Practitioner&apos;s family/last name
+	//channelMap.put(&quot;practitionerGivenName&quot;, practitionerGivenName);   // Optional: Practitioner&apos;s given/first name
+	//channelMap.put(&quot;practitionerPrefix&quot;, practitionerPrefix);         // Optional: Practitioner&apos;s prefix (e.g., &quot;Dr.&quot;, &quot;Mr.&quot;)
 
-// Create Practitioner Resource
-var practitioner = {
-    &quot;resourceType&quot;: &quot;Practitioner&quot;,
-};
-if (practitionerIdSystem &amp;&amp; practitionerIdValue) {
-    practitioner.identifier = [{
-        &quot;value&quot;: practitionerIdValue,
-        &quot;system&quot;: practitionerIdSystem
-    }];
-}
-else {
-    logger.warn(&quot;Practitioner has no identifier (no value and/or system)&quot;);
-}
-if (practitionerFamilyName) {
-    practitioner.name = practitioner.name || [{}];
-    practitioner.name[0].family = practitionerFamilyName;
-}
-if (practitionerGivenName) {
-    practitioner.name = practitioner.name || [{}];
-    practitioner.name[0].given = [practitionerGivenName];
-}
-if (practitionerPrefix) {
-    practitioner.name = practitioner.name || [{}];
-    practitioner.name[0].prefix = [practitionerPrefix];
-}
-var practitionerUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
-logger.info(&apos;Handled practitioner resource&apos;);
-
-// Create FHIR Bundle
-var bundle = {
-    &quot;resourceType&quot;: &quot;Bundle&quot;,
-    &quot;type&quot;: &quot;transaction&quot;,
-    &quot;entry&quot;: []
-};
-
-if (patientIdSystem &amp;&amp; patientIdValue) {
-    bundle.entry.push({
-        &quot;resource&quot;: patient,
-        &quot;fullUrl&quot;: patientUuid,
-        &quot;request&quot;: {
-            &quot;method&quot;: &quot;PUT&quot;,
-            &quot;url&quot;: &quot;Patient?identifier=&quot; + encodeURIComponent(patientIdSystem + &quot;|&quot; + patientIdValue)
-        }
-    });
-}
-
-if (encounterIdSystem &amp;&amp; encounterIdValue) {
-    bundle.entry.push({
-        &quot;resource&quot;: encounter,
-        &quot;fullUrl&quot;: encounterUuid,
-        &quot;request&quot;: {
-            &quot;method&quot;: &quot;PUT&quot;,
-            &quot;url&quot;: &quot;Encounter?identifier=&quot; + encodeURIComponent(encounterIdSystem + &quot;|&quot; + encounterIdValue)
-        }
-    });
-}
-
-// Conditional update for practitioner is not yet supported...
-// if (practitionerIdSystem &amp;&amp; practitionerIdValue) {
-//     bundle.entry.push({
-//         &quot;resource&quot;: practitioner,
-//         &quot;fullUrl&quot;: practitionerUuid,
-//         &quot;request&quot;: {
-//             &quot;method&quot;: &quot;PUT&quot;,
-//             &quot;url&quot;: &quot;Practitioner?identifier=&quot; + encodeURIComponent(practitionerIdSystem + &quot;|&quot; + practitionerIdValue)
-//         }
-//     });
-
-// Convert bundle to JSON
-var jsonString = JSON.stringify(bundle);
-logger.info(&apos;Outgoing FHIR: &apos; + jsonString);
-// Set the transformed message to the JSON string
-msg = jsonString;</script>
+	//CompleteQuestionnaire Task
+	channelMap.put(&quot;questionnaireTitle&quot;, &quot;Complete questionnaire&quot;); // hardcoded, not sure what a good HL7v2 mapping is
+	
+} catch (error) {
+    // Log any errors for debugging purposes
+    logger.error(&quot;Error while parsing the URL: &quot; + error.message);
+    throw error; // Re-throw the error to handle it upstream if needed
+}</script>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
       </elements>
       <inboundTemplate encoding="base64"></inboundTemplate>
       <outboundTemplate encoding="base64"></outboundTemplate>
       <inboundDataType>HL7V2</inboundDataType>
-      <outboundDataType>JSON</outboundDataType>
+      <outboundDataType>RAW</outboundDataType>
       <inboundProperties class="com.mirth.connect.plugins.datatypes.hl7v2.HL7v2DataTypeProperties" version="4.5.2">
         <serializationProperties class="com.mirth.connect.plugins.datatypes.hl7v2.HL7v2SerializationProperties" version="4.5.2">
           <handleRepetitions>true</handleRepetitions>
@@ -320,8 +229,8 @@ msg = jsonString;</script>
           <originalIdMapVariable></originalIdMapVariable>
         </responseValidationProperties>
       </inboundProperties>
-      <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.5.2">
-        <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.5.2">
+      <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
           <splitType>JavaScript</splitType>
           <batchScript></batchScript>
         </batchProperties>
@@ -338,7 +247,7 @@ msg = jsonString;</script>
   <destinationConnectors>
     <connector version="4.5.2">
       <metaDataId>1</metaDataId>
-      <name>Atticus Data Import</name>
+      <name>import_data_in_atticus</name>
       <properties class="com.mirth.connect.connectors.http.HttpDispatcherProperties" version="4.5.2">
         <pluginProperties/>
         <destinationConnectorProperties version="4.5.2">
@@ -366,14 +275,6 @@ msg = jsonString;</script>
         <proxyAddress></proxyAddress>
         <proxyPort></proxyPort>
         <method>post</method>
-        <headers class="linked-hash-map">
-          <entry>
-            <string>x-user-id</string>
-            <list>
-              <string>FILL ME</string>
-            </list>
-          </entry>
-        </headers>
         <parameters class="linked-hash-map"/>
         <useHeadersVariable>false</useHeadersVariable>
         <headersVariable></headersVariable>
@@ -390,20 +291,219 @@ msg = jsonString;</script>
         <usePreemptiveAuthentication>true</usePreemptiveAuthentication>
         <username>FILL ME</username>
         <password>FILL ME</password>
-        <content>${message.rawData}</content>
+        <content>${transactionBundle}</content>
         <contentType>application/json</contentType>
         <dataTypeBinary>false</dataTypeBinary>
         <charset>DEFAULT_ENCODING</charset>
         <socketTimeout>30000</socketTimeout>
       </properties>
       <transformer version="4.5.2">
-        <elements/>
+        <elements>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.5.2">
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script>try {
+	
+	logger.info(&quot;destination tranformer&quot;);
+	
+	logger.info(&quot;Creating data import transaction bundle&quot;);
+
+	// Create Patient Resource
+	var patient = {
+	    &quot;resourceType&quot;: &quot;Patient&quot;
+	};
+	patientIdSystem = channelMap.get(&quot;patientIdSystem&quot;);
+	patientIdValue = channelMap.get(&quot;patientIdValue&quot;);
+	if (patientIdSystem &amp;&amp; patientIdValue) {
+	    patient.identifier = [{
+	        &quot;value&quot;: patientIdValue,
+	        &quot;system&quot;: patientIdSystem
+	    }];
+	} else {
+	    logger.warn(&quot;Patient has no identifier (no value and/or system)&quot;);
+	}
+	patientFamilyName = channelMap.get(&quot;patientFamilyName&quot;);
+	patientGivenName = channelMap.get(&quot;patientGivenName&quot;);
+	if (patientFamilyName || patientGivenName) {
+	    patient.name = [{}]; // Initialize as an array with one empty object
+	    if (patientFamilyName) {
+	        patient.name[0].family = patientFamilyName;
+	    }
+	    if (patientGivenName) {
+	        patient.name[0].given = [patientGivenName];
+	    }
+	}
+	patientGender = channelMap.get(&quot;patientGender&quot;);
+	if (patientGender) {
+	    patient.gender = patientGender;
+	}
+	patientBirthDate = channelMap.get(&quot;patientBirthDate&quot;);
+	if (patientBirthDate) {
+	    patient.birthDate = patientBirthDate;
+	}
+	var patientUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+	logger.info(&quot;Handled patient resource&quot;);
+	
+	// Create Encounter Resource
+	var encounter = {
+	    &quot;resourceType&quot;: &quot;Encounter&quot;
+	};
+	encounterIdValue = channelMap.get(&quot;encounterIdValue&quot;);
+	encounterIdSystem = channelMap.get(&quot;encounterIdSystem&quot;);
+	if (encounterIdSystem &amp;&amp; encounterIdValue) {
+	    encounter.identifier = [{
+	        &quot;value&quot;: encounterIdValue,
+	        &quot;system&quot;: encounterIdSystem
+	    }];
+	} else {
+	    logger.warn(&quot;Encounter has no identifier (no value and/or system)&quot;);
+	}
+	encounterStatus = channelMap.get(&quot;encounterStatus&quot;);
+	if (encounterStatus) {
+	    encounter.status = encounterStatus;
+	}
+	if (patientUuid) {
+	    encounter.subject = {
+	        &quot;reference&quot;: patientUuid
+	    };
+	} else {
+	    logger.error(&quot;Encounter has no subject&quot;);
+	}
+	var encounterUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+	logger.info(&apos;Handled encounter resource&apos;);
+	
+	// Create Practitioner Resource
+	var practitioner = {
+	    &quot;resourceType&quot;: &quot;Practitioner&quot;,
+	};
+	practitionerIdValue = channelMap.get(&quot;practitionerIdValue&quot;);
+	practitionerIdSystem = channelMap.get(&quot;practitionerIdSystem&quot;);
+	if (practitionerIdSystem &amp;&amp; practitionerIdValue) {
+	    practitioner.identifier = [{
+	        &quot;value&quot;: practitionerIdValue,
+	        &quot;system&quot;: practitionerIdSystem
+	    }];
+	} else {
+	    logger.warn(&quot;Practitioner has no identifier (no value and/or system)&quot;);
+	}
+	practitionerFamilyName = channelMap.get(&quot;practitionerFamilyName&quot;);
+	practitionerGivenName = channelMap.get(&quot;practitionerGivenName&quot;);
+	practitionerPrefix = channelMap.get(&quot;practitionerPrefix&quot;);
+	if (practitionerFamilyName || practitionerGivenName || practitionerPrefix) {
+	    practitioner.name = [{}]; // Initialize as an array with one empty object
+	    if (practitionerFamilyName) {
+	        practitioner.name[0].family = practitionerFamilyName;
+	    }
+	    if (practitionerGivenName) {
+	        practitioner.name[0].given = [practitionerGivenName];
+	    }
+	    if (practitionerPrefix) {
+	        practitioner.name[0].prefix = [practitionerPrefix];
+	    }
+	}
+	var practitionerUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+	logger.info(&apos;Handled practitioner resource&apos;);
+
+	// Create &apos;Complete Questionnaire&apos; Task
+	var task = {
+	    &quot;resourceType&quot;: &quot;Task&quot;,
+	    &quot;intent&quot;: &quot;order&quot;,
+	    &quot;status&quot;: &quot;draft&quot;,
+	    &quot;code&quot;: {
+	        &quot;text&quot;: channelMap.get(&quot;questionnaireTitle&quot;),
+	        &quot;coding&quot;: [
+	            {
+	                &quot;system&quot;: &quot;http://fhir.tiro.health/CodeSystem/task-type&quot;,
+	                &quot;code&quot;: &quot;complete-questionnaire&quot;
+	            }
+	        ]
+	    },
+        
+	};
+	if (patientUuid) {
+	    task.for = {
+	        &quot;reference&quot;: patientUuid
+	    };
+	} else {
+	    logger.error(&quot;Task has no patient&quot;);
+	}
+	if (encounterUuid) {
+	    task.encounter = {
+	        &quot;reference&quot;: encounterUuid
+	    };
+	}
+	var taskUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+	logger.info(&apos;Handled task resource&apos;);
+	
+	// Create FHIR Bundle
+	var bundle = {
+	    &quot;resourceType&quot;: &quot;Bundle&quot;,
+	    &quot;type&quot;: &quot;transaction&quot;,
+	    &quot;entry&quot;: []
+	};
+	
+	if (patientIdSystem &amp;&amp; patientIdValue) {
+	    bundle.entry.push({
+	        &quot;resource&quot;: patient,
+	        &quot;fullUrl&quot;: patientUuid,
+	        &quot;request&quot;: {
+	            &quot;method&quot;: &quot;PUT&quot;,
+	            &quot;url&quot;: &quot;Patient?identifier=&quot; + encodeURIComponent(patientIdSystem + &quot;|&quot; + patientIdValue)
+	        }
+	    });
+	}
+	
+	if (encounterIdSystem &amp;&amp; encounterIdValue) {
+	    bundle.entry.push({
+	        &quot;resource&quot;: encounter,
+	        &quot;fullUrl&quot;: encounterUuid,
+	        &quot;request&quot;: {
+	            &quot;method&quot;: &quot;PUT&quot;,
+	            &quot;url&quot;: &quot;Encounter?identifier=&quot; + encodeURIComponent(encounterIdSystem + &quot;|&quot; + encounterIdValue)
+	        }
+	    });
+	}
+	
+	if (practitionerIdSystem &amp;&amp; practitionerIdValue) {
+	    bundle.entry.push({
+	        &quot;resource&quot;: practitioner,
+	        &quot;fullUrl&quot;: practitionerUuid,
+	        &quot;request&quot;: {
+	            &quot;method&quot;: &quot;PUT&quot;,
+	            &quot;url&quot;: &quot;Practitioner?identifier=&quot; + encodeURIComponent(practitionerIdSystem + &quot;|&quot; + practitionerIdValue)
+	        }
+	    });
+	}
+	
+	bundle.entry.push({
+	        &quot;resource&quot;: task,
+	        &quot;fullUrl&quot;: taskUuid,
+	        &quot;request&quot;: {
+	            &quot;method&quot;: &quot;POST&quot;,
+	            &quot;url&quot;: &quot;Task&quot;
+	        }
+	    });
+	
+	
+	// Convert bundle to JSON
+	var jsonString = JSON.stringify(bundle);
+	
+	logger.info(&quot;transactionBundle: &quot; + jsonString)
+	channelMap.put(&quot;transactionBundle&quot;, jsonString);
+
+} catch (error) {
+    // Log any errors for debugging purposes
+    logger.error(&quot;Error while parsing the URL: &quot; + error.message);
+    throw error; // Re-throw the error to handle it upstream if needed
+}</script>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        </elements>
         <inboundTemplate encoding="base64"></inboundTemplate>
         <outboundTemplate encoding="base64"></outboundTemplate>
-        <inboundDataType>JSON</inboundDataType>
+        <inboundDataType>RAW</inboundDataType>
         <outboundDataType>JSON</outboundDataType>
-        <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.5.2">
-          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.5.2">
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.5.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.5.2">
             <splitType>JavaScript</splitType>
             <batchScript></batchScript>
           </batchProperties>
@@ -420,7 +520,25 @@ msg = jsonString;</script>
           <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.5.2">
             <sequenceNumber>0</sequenceNumber>
             <enabled>true</enabled>
-            <script>logger.info(&apos;Response Body: &apos; + responseBody);</script>
+            <script>logger.info(&quot;In response transformer&quot;);
+try{
+	// Capture the HTTP response status code
+	var statusCode = $(&apos;responseStatusCode&apos;);
+	var statusMessage = $(&apos;responseStatusLine&apos;);
+     var responseBody = response.getMessage();
+     logger.info(&quot;Transaction response code: &quot; + statusCode);
+	logger.info(&quot;Transaction response body: &quot; + responseBody);
+	// Check if the status code is in the 2xx range
+	if(statusCode==&quot;200&quot;||statusCode == &quot;201&quot;) {
+           responseStatus = SENT;
+	} else {
+		 responseStatus = ERROR;
+	}
+	
+} catch (error) {
+    logger.error(&quot;Error occurred: &quot; + error.message);
+    throw error; // Pass the error upstream
+}</script>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         </elements>
         <inboundTemplate encoding="base64"></inboundTemplate>
@@ -498,7 +616,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1738315960039</time>
+        <time>1744284752830</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>
