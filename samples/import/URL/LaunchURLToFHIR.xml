@@ -444,8 +444,8 @@ try{
 		            break;
 		        }
 		    }
-		}    &#xd;		channelMap.put(&quot;redirect&quot;, &quot;https://app-staging.tiro.health/reports?subject=Patient/&quot; + patientId);
-	    logger.info(&quot;Status is 2xx. Redirect URL set to app-staging.tiro.health&quot;);
+		}    &#xd;		channelMap.put(&quot;redirect&quot;, &quot;https://app.tiro.health/reports?subject=Patient/&quot; + patientId);
+	    logger.info(&quot;Status is 2xx. Redirect URL set to app.tiro.health&quot;);
 	} else {
 	    var error = &quot;We encountered an integration error. Please contact your IT department for assistance.&quot;;
 	
@@ -455,7 +455,7 @@ try{
 	    		&quot;statusCode: &quot; + statusCode + &quot;\n&quot; +
 	    		&quot;statusMessage: &quot; + statusMessage + &quot;\n&quot; +
 	    		&quot;responseBody: &quot; + responseBody + &quot;\n&quot;;
-	    channelMap.put(&quot;redirect&quot;, &quot;https://reports-staging.tiro.health/ui/error?error=&quot; + encodeURIComponent(error) + &quot;&amp;detailed_error=&quot; + encodeURIComponent(detailedError));
+	    channelMap.put(&quot;redirect&quot;, &quot;https://reports.tiro.health/ui/error?error=&quot; + encodeURIComponent(error) + &quot;&amp;detailed_error=&quot; + encodeURIComponent(detailedError));
 	    logger.info(&quot;Status is NOT 2xx. Redirect URL set to an error screen.&quot;);
 	}
 	responseMap.put(&quot;statusCode&quot;, &quot;307&quot;);
