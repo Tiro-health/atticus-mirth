@@ -3,7 +3,7 @@
   <nextMetaDataId>4</nextMetaDataId>
   <name>LaunchURLToFHIR</name>
   <description></description>
-  <revision>106</revision>
+  <revision>137</revision>
   <sourceConnector version="4.5.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -77,8 +77,12 @@
 try {
 	parameters = sourceMap.get(&quot;parameters&quot;);
 	if (parameters !== null) {
-	    patientId = parameters.getParameter(&quot;patient_id&quot;);
-	    encounterId = parameters.getParameter(&quot;encounter_id&quot;);
+	    patientId = parameters.getParameter(&quot;patient&quot;);
+	    patientGender = parameters.getParameter(&quot;sex&quot;);
+	    patientBirthDate = parameters.getParameter(&quot;dob&quot;);
+	    encounterId = parameters.getParameter(&quot;encounter&quot;);
+	    user = parameters.getParameter(&quot;user&quot;);
+	    supervisor = parameters.getParameter(&quot;supervisor&quot;);
 	} else {
 	    logger.error(&quot;Parameters object is null.&quot;);
 	}
@@ -97,17 +101,18 @@ try {
 	
 	// Patient Information
 	channelMap.put(&quot;patientIdValue&quot;, patientId);
-	channelMap.put(&quot;patientIdSystem&quot;, &quot;http://launch.com&quot;);
+	channelMap.put(&quot;patientIdSystem&quot;, &quot;https://fhir.nexuzhealth.com/standards/fhir/NamingSystem/kws/pm/patient/eadnr&quot;);
 	// channelMap.put(&quot;patientFamilyName&quot;, patientFamilyName); // Optional: Patient&apos;s family/last name
 	// channelMap.put(&quot;patientGivenName&quot;, patientGivenName);   // Optional: Patient&apos;s given/first name
-	// channelMap.put(&quot;patientGender&quot;, patientGender);         // Optional: Patient&apos;s gender (e.g., &quot;male&quot;, &quot;female&quot;)
-	// channelMap.put(&quot;patientBirthDate&quot;, patientBirthDate);   // Optional: Patient&apos;s birth date (YYYY-MM-DD)
+	channelMap.put(&quot;patientGender&quot;, patientGender);         // Optional: Patient&apos;s gender (e.g., &quot;male&quot;, &quot;female&quot;)
+	channelMap.put(&quot;patientBirthDate&quot;, patientBirthDate);   // Optional: Patient&apos;s birth date (YYYY-MM-DD)
 	
 	// Encounter Information
 	channelMap.put(&quot;encounterIdValue&quot;, encounterId);
-	channelMap.put(&quot;encounterIdSystem&quot;, &quot;http://launch.com&quot;);
-	// channelMap.put(&quot;encounterStatus&quot;, encounterStatus); // Optional: Encounter&apos;s status (e.g., &quot;planned&quot;, &quot;in-progress&quot;)
-	
+	channelMap.put(&quot;encounterIdSystem&quot;, &quot;https://fhir.nexuzhealth.com/standards/fhir/NamingSystem/kws/bifrost/receptie/cnr&quot;);
+	channelMap.put(&quot;encounterStatus&quot;, &quot;unknown&quot;); //  Encounter&apos;s status (e.g., &quot;planned&quot;, &quot;in-progress&quot;)
+	channelMap.put(&quot;encounterRespIdSystem&quot;, &quot;https://tiro.health/standards/fhir/NamingSystem/kws/user-id&quot;); // Optional, responsible identifier for the encounter 
+	channelMap.put(&quot;encounterRespIdValue&quot;, supervisor); // Optional, responsible identifier for the encounter 
 	// Practitioner Information
 	// channelMap.put(&quot;practitionerIdValue&quot;, practitionerIdValue);   // Optional: Practitioner identifier value
 	// channelMap.put(&quot;practitionerIdSystem&quot;, &quot;http://launch.com&quot;);  // Optional: Practitioner identifier system
@@ -269,7 +274,34 @@ try {
 	} else {
 	    logger.warn(&quot;Encounter has no identifier (no value and/or system)&quot;);
 	}
-	encounterStatus = channelMap.get(&quot;encounterStatus&quot;);
+	var encounterRespIdSystem = channelMap.get(&quot;encounterRespIdSystem&quot;);
+	var encounterRespIdValue = channelMap.get(&quot;encounterRespIdValue&quot;);
+	if (encounterRespIdSystem &amp;&amp; encounterRespIdValue) {
+		var responsibleUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+		encounter.participant = [
+		    {
+		      &quot;type&quot;: [
+		        {
+		          &quot;coding&quot;: [
+		            {
+		              &quot;system&quot;: &quot;http://terminology.hl7.org/CodeSystem/v3-ParticipationType&quot;,
+		              &quot;code&quot;: &quot;RESP&quot;,
+		              &quot;display&quot;: &quot;responsible party&quot;
+		            }
+		          ]
+		        }
+		      ],
+		      &quot;actor&quot;: {
+		        &quot;identifier&quot;: {
+		        	&quot;system&quot;: encounterRespIdSystem,
+		        	&quot;value&quot;: encounterRespIdValue
+		        	},
+		      }
+		    }
+		  ];
+	}
+	
+	var encounterStatus = channelMap.get(&quot;encounterStatus&quot;);
 	if (encounterStatus) {
 	    encounter.status = encounterStatus;
 	}
@@ -400,8 +432,20 @@ try{
 	
 	// Check if the status code is in the 2xx range
 	if(statusCode==&quot;200&quot;||statusCode == &quot;201&quot;) {
-	    channelMap.put(&quot;redirect&quot;, &quot;https://app.tiro.health&quot;);
-	    logger.info(&quot;Status is 2xx. Redirect URL set to app.tiro.health&quot;);
+		&#xd;
+		// get the subject id, so the user does not need to select the subject
+		var fhirBundle = JSON.parse(responseBody);&#xd;		var patientId = null;
+		if (fhirBundle &amp;&amp; fhirBundle.entry &amp;&amp; Array.isArray(fhirBundle.entry)) {
+		    for (var i = 0; i &lt; fhirBundle.entry.length; i++) {
+		        var entry = fhirBundle.entry[i];
+		        if (entry.resource &amp;&amp; entry.resource.resourceType === &apos;Patient&apos;) {
+		            patientId = entry.resource.id;
+		            logger.info(&quot;Patient id found&quot;);
+		            break;
+		        }
+		    }
+		}    &#xd;		channelMap.put(&quot;redirect&quot;, &quot;https://app-staging.tiro.health/reports?subject=Patient/&quot; + patientId);
+	    logger.info(&quot;Status is 2xx. Redirect URL set to app-staging.tiro.health&quot;);
 	} else {
 	    var error = &quot;We encountered an integration error. Please contact your IT department for assistance.&quot;;
 	
@@ -411,7 +455,7 @@ try{
 	    		&quot;statusCode: &quot; + statusCode + &quot;\n&quot; +
 	    		&quot;statusMessage: &quot; + statusMessage + &quot;\n&quot; +
 	    		&quot;responseBody: &quot; + responseBody + &quot;\n&quot;;
-	    channelMap.put(&quot;redirect&quot;, &quot;https://reports.tiro.health/ui/error?error=&quot; + encodeURIComponent(error) + &quot;&amp;detailed_error=&quot; + encodeURIComponent(detailedError));
+	    channelMap.put(&quot;redirect&quot;, &quot;https://reports-staging.tiro.health/ui/error?error=&quot; + encodeURIComponent(error) + &quot;&amp;detailed_error=&quot; + encodeURIComponent(detailedError));
 	    logger.info(&quot;Status is NOT 2xx. Redirect URL set to an error screen.&quot;);
 	}
 	responseMap.put(&quot;statusCode&quot;, &quot;307&quot;);
@@ -496,7 +540,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1742469105892</time>
+        <time>1745911683712</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>
