@@ -1,6 +1,6 @@
-# PollForQRs
+# Polling for QuestionnaireResponses in Tiro.health
 
-This sample demonstrates how to poll for any reports that have been submitted in Tiro.health.
+This sample demonstrates how to poll for any reports that have been submitted in Tiro.health. The data in the reports are stored as FHIR QuestionnaireResponses, which are linked to Patients and Encounters. The channel retrieves these QuestionnaireResponses and routes them to another channel for further processing.
 
 This channel polls every minute and does a FHIR search query to get all QRs that are completed in the current polling interval:<br>
 <code>GET /fhir/r5/QuestionnaireResponse?_lastUpdated=ge[X]&status=completed&_include=subject&_include=encounter</code>
