@@ -3,7 +3,7 @@
   <nextMetaDataId>4</nextMetaDataId>
   <name>LaunchURLToFHIR</name>
   <description></description>
-  <revision>30</revision>
+  <revision>61</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -89,14 +89,14 @@ try {
 	
 	// validate query params
 	if (patientId !== null) {
-	   logger.info(&quot;Parameter &apos;patient_id&apos; is set, value: &quot; + patientId);
+	   logger.info(&quot;Parameter &apos;patient&apos; is set, value: &quot; + patientId);
 	} else {
-	   logger.warn(&quot;Parameter &apos;patient_id&apos; is NOT set.&quot;);
+	   logger.warn(&quot;Parameter &apos;patient&apos; is NOT set.&quot;);
 	}
 	if (encounterId !== null) {
-	   logger.info(&quot;Parameter &apos;encounter_id&apos; is set, value: &quot; + encounterId);
+	   logger.info(&quot;Parameter &apos;encounter&apos; is set, value: &quot; + encounterId);
 	} else {
-	   logger.info(&quot;Parameter &apos;encounter_id&apos; is NOT set.&quot;);
+	   logger.info(&quot;Parameter &apos;encounter&apos; is NOT set.&quot;);
 	}
 	
 	// Patient Information
@@ -314,6 +314,32 @@ try {
 	}
 	var encounterUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
 	logger.info(&apos;Handled encounter resource&apos;);
+
+	// Create CompleteQR Task Resource
+	var task = {
+         &quot;resourceType&quot;: &quot;Task&quot;,
+         &quot;intent&quot;: &quot;order&quot;,
+         &quot;code&quot;: {
+             &quot;text&quot;: &quot;CT scan report&quot;, // this is the title of report (hardcoded for now)
+             &quot;coding&quot;: [
+                 {
+                     &quot;system&quot;: &quot;http://fhir.tiro.health/CodeSystem/task-type&quot;,
+                     &quot;code&quot;: &quot;complete-questionnaire&quot;,
+                 }
+             ],
+         },
+         &quot;status&quot;: &quot;draft&quot;,
+         &quot;for&quot;: {
+	        &quot;reference&quot;: patientUuid
+	    }
+     };
+	if (encounterUuid) {
+	    task.encounter = {
+	        &quot;reference&quot;: encounterUuid
+	    }
+	} 
+	var taskUuid = &quot;urn:uuid:&quot; + UUIDGenerator.getUUID();
+	logger.info(&apos;Handled task resource&apos;);
 	
 	// Create Practitioner Resource
 	var practitioner = {
@@ -386,6 +412,14 @@ try {
 	        }
 	    });
 	}
+     bundle.entry.push({
+        &quot;resource&quot;: task,
+        &quot;fullUrl&quot;: taskUuid,
+        &quot;request&quot;: {
+            &quot;method&quot;: &quot;POST&quot;, // TODO change to conditional create based on CNR
+            &quot;url&quot;: &quot;Task&quot;
+        }
+	});
 	
 	// Convert bundle to JSON
 	var jsonString = JSON.stringify(bundle);
@@ -440,16 +474,26 @@ try{
 		&#xd;
 		// get the subject id, so the user does not need to select the subject
 		var fhirBundle = JSON.parse(responseBody);&#xd;		var patientId = null;
+		var taskId = null;
 		if (fhirBundle &amp;&amp; fhirBundle.entry &amp;&amp; Array.isArray(fhirBundle.entry)) {
 		    for (var i = 0; i &lt; fhirBundle.entry.length; i++) {
 		        var entry = fhirBundle.entry[i];
 		        if (entry.resource &amp;&amp; entry.resource.resourceType === &apos;Patient&apos;) {
 		            patientId = entry.resource.id;
 		            logger.info(&quot;Patient id found&quot;);
-		            break;
+		        }
+		        if (entry.resource &amp;&amp; entry.resource.resourceType === &apos;Task&apos;) {
+		            taskId = entry.resource.id;
+		            logger.info(&quot;Task id found&quot;);
+
+		        }
+		        if (taskId &amp;&amp; patientId) {
+		        	break;
 		        }
 		    }
-		}    &#xd;		channelMap.put(&quot;redirect&quot;, &quot;https://app.tiro.health/reports?subject=Patient/&quot; + patientId);
+		    
+		}    
+		// TODO redirect to edit page if it&apos;s an update&#xd;		channelMap.put(&quot;redirect&quot;, &quot;https://app.tiro.health/reports/create?task=Task/&quot; + taskId + &quot;&amp;subject=Patient/&quot; + patientId);
 	     logger.info(&quot;Status is 2xx. Redirect URL set to app.tiro.health&quot;);
 	} else {
 	    var error = &quot;We encountered an integration error. Please contact your IT department for assistance.&quot;;
@@ -545,7 +589,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1748856303427</time>
+        <time>1749627826646</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>
