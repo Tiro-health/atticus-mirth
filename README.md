@@ -20,7 +20,7 @@ This repository contains multiple MIRTH channels that demonstrate how to integra
     - [`URL`](channels/import/URL/): Channel that converts a parametrized URL into a FHIR transaction to import data into Atticus.
   - [`export/`](channels/export/): Contains the channel files responsible for exporting data from Atticus.
     - [`PollForQRs`](channels/export/PollForQRs/): Channel that repeadetly polls for FHIR QuestionnaireResponses in Atticus and routes them to another channel.
-
+    - [`FHIRBundleToKWS`](channels/export/FHIRBundleToKWS/): Channel that listens for a FHIR bundle and sends it to KWS
 ## Setup
 
 ### Downloading MIRTH
