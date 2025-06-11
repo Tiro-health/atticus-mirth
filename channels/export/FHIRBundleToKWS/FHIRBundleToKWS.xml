@@ -3,7 +3,7 @@
   <nextMetaDataId>3</nextMetaDataId>
   <name>FHIRBundleToKWS</name>
   <description></description>
-  <revision>1</revision>
+  <revision>5</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -127,7 +127,7 @@ try {
     }
 
     // check if it&apos;s an update
-    if (questionnaireResponse.meta &amp;&amp; questionnaireResponse.meta.versionId != &apos;1&apos;) {
+    if (questionnaireResponse.meta &amp;&amp; questionnaireResponse.meta.versionId &amp;&amp; questionnaireResponse.meta.versionId != &apos;1&apos;) {
         channelMap.put(&quot;isUpdate&quot;, true);
     } else {
         channelMap.put(&quot;isUpdate&quot;, false);
@@ -349,9 +349,10 @@ channelMap.put(&quot;deleteXml&quot;, xmlDelete);</script>
             <sequenceNumber>0</sequenceNumber>
             <enabled>true</enabled>
             <script>if (channelMap.get(&quot;isUpdate&quot;) == false) {
+	logger.info(&quot;No need to send delete XML&quot;);
 	return false; // Don&apos;t send a delete
 } else {
-	logger.info(&quot;No need to send delete XML&quot;);
+	logger.info(&quot;Send a delete XML&quot;);
 	return true;
 }</script>
           </com.mirth.connect.plugins.javascriptrule.JavaScriptRule>
@@ -552,7 +553,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1748856654983</time>
+        <time>1749626423948</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>
@@ -561,5 +562,6 @@ return;</undeployScript>
       </pruningSettings>
       <userId>1</userId>
     </metadata>
+    <channelTags/>
   </exportData>
 </channel>
