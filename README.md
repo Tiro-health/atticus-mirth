@@ -25,7 +25,7 @@ This repository contains multiple MIRTH channels that demonstrate how to integra
 
 ### Downloading MIRTH
 
-You can download MIRTH from the [NextGen Repo](https://github.com/nextgenhealthcare/connect/releases). Follow the instructions on the website to install MIRTH on your system.
+You can download MIRTH from the [NextGen Repo](https://github.com/nextgenhealthcare/connect/releases). Follow the instructions on the website to install MIRTH on your system. All channels require MIRTH 4.4.2 or higher.
 
 ### Importing and Starting a Channel
 
