@@ -3,7 +3,7 @@
   <nextMetaDataId>2</nextMetaDataId>
   <name>Hl7v2ToFHIR</name>
   <description></description>
-  <revision>85</revision>
+  <revision>4</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -275,6 +275,14 @@ try {
         <proxyAddress></proxyAddress>
         <proxyPort></proxyPort>
         <method>post</method>
+        <headers class="linked-hash-map">
+          <entry>
+            <string>x-channel-name</string>
+            <list>
+              <string>${channelName}</string>
+            </list>
+          </entry>
+        </headers>
         <parameters class="linked-hash-map"/>
         <useHeadersVariable>false</useHeadersVariable>
         <headersVariable></headersVariable>
@@ -289,8 +297,8 @@ try {
         <useAuthentication>true</useAuthentication>
         <authenticationType>Basic</authenticationType>
         <usePreemptiveAuthentication>true</usePreemptiveAuthentication>
-        <username>FILL ME</username>
-        <password>FILL ME</password>
+        <username>${tiroUsername}</username>
+        <password>${tiroPassword}</password>
         <content>${transactionBundle}</content>
         <contentType>application/json</contentType>
         <dataTypeBinary>false</dataTypeBinary>
@@ -616,7 +624,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1744284752830</time>
+        <time>1749819602315</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>

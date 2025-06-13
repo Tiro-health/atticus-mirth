@@ -5,7 +5,15 @@ This sample demonstrates how to transform a parametrized URL into a FHIR transac
 ### Why converting a HTTP GET request into a HTTP POST request in a Mirth channel?
 A lot of healthcare systems allow for configuration of parametrized URLs. Resolving those URLs on external servers is not always desirable because it can lead to security issues, such as exposing sensitive data in the URL or allowing unauthorized access to the system. Therefore, it is often better to resolve these URLs on the server side, where you can control the data and ensure that it is handled securely.
 
-Before importing this channel, ensure you replace all 'FILL ME' placeholders in the `LaunchURLToFhir.xml` file with the appropriate values. For the necessary credentials, please contact [support@tiro.health](mailto:support@tiro.health).
+## Configuration
+This channel works with a Configuration Map (`Settings` → `Configuration Map` tab). The following keys are expected:
+
+| Key                 | Description                                                                 |
+|---------------------|-----------------------------------------------------------------------------|
+| `tiroUsername`      | Authentication username |
+| `tiroPassword`      | Authentication password |
+
+Please contact [support@tiro.health](mailto:support@tiro.health) for these credentials.
 
 ## Sequence diagram
 ```mermaid

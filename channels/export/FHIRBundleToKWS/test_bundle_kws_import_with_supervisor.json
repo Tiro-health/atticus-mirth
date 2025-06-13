@@ -1,0 +1,128 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:3302b6e2-286c-505d-988d-14a7234a8754",
+      "request": {
+        "url": "Patient?identifier=http://tiro.health/Patient%7C1",
+        "method": "PUT"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "id": "1",
+        "identifier": [
+          {
+            "system": "https://fhir.nexuzhealth.com/standards/fhir/NamingSystem/kws/pm/patient/eadnr",
+            "value": "800"
+          }
+        ],
+        "birthDate": "1980-01-01",
+        "gender": "male",
+        "name": [
+          {
+            "prefix": [],
+            "given": [
+              "John"
+            ],
+            "family": "Doe",
+            "text": "John Doe"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5302b6e2-286c-505d-988d-14a7234a8754",
+      "request": {
+        "url": "Encounter?identifier=http://tiro.health/Encounter%7C1",
+        "method": "PUT"
+      },
+      "resource": {
+        "resourceType": "Encounter",
+        "identifier": [
+          {
+            "system": "https://fhir.nexuzhealth.com/standards/fhir/NamingSystem/kws/bifrost/receptie/cnr",
+            "value": "255348594"
+          }
+        ],
+        "participant": [{"type": [{"coding": [{"code": "RESP", "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType", "display": "responsible party"}]}], "actor": {"identifier": {"value": "test", "system": "https://tiro.health/standards/fhir/NamingSystem/kws/user-id"}}}],
+        "subject": {
+          "type": "Patient",
+          "reference": "urn:uuid:e10a3ee5-8c28-5205-998f-ae74e4d8417a"
+        },
+        "status": "completed"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b020fab6-a998-5a5b-9cf0-713c4dd55dcf",
+      "request": {
+        "url": "QuestionnaireResponse",
+        "method": "POST"
+      },
+      "resource": {
+        "id": "1",
+        "meta": {
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/firstCreated",
+              "valueInstant": "2021-01-01T00:00:00Z"
+            }
+          ],
+          "lastUpdated": "2021-01-01T00:00:00Z",
+          "versionId": "1"
+        },
+        "identifier": [
+          {
+            "system": "http://tiro.health/fhir/NamingSystem/report-id",
+            "value": "1"
+          }
+        ],
+        "questionnaire": "http://templates.tiro.health/templates/test1%7C1.0.0",
+        "encounter": {
+          "type": "Encounter",
+          "reference": "urn:uuid:5302b6e2-286c-505d-988d-14a7234a8754"
+        },
+        "status": "in-progress",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">\n   <pre>\n      Comorbidity? YES\n       Cardial Comorbidity? YES\n        Angina? YES\n        MI? NO\n       Vascular Comorbidity?\n        (no answers)\n       ...\n      Histopathology\n       Abdominal\n        pT category: 1a\n       ...\n     </pre>\n  </div>",
+          "extension": [
+            {
+              "url": "http://fhir.tiro.health/StructureDefinition/narrative-alternative-format",
+              "valueAttachment": {
+                "contentType": "text/plain",
+                "data": "VHVtb3Igc2l6ZTogMy4wIA=="
+              }
+            }
+          ]
+        },
+        "item": [
+          {
+            "text": "MRI Brain",
+            "linkId": "1",
+            "item": [
+              {
+                "text": "Tumor size",
+                "linkId": "2",
+                "answer": [
+                  {
+                    "valueDecimal": "1.0"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "resourceType": "QuestionnaireResponse",
+        "subject": {
+          "type": "Patient",
+          "reference": "urn:uuid:3302b6e2-286c-505d-988d-14a7234a8754"
+        },
+        "author": {
+          "type": "Practitioner",
+          "reference": "urn:uuid:e10a3ee5-8c28-5205-998f-ae74e4d8417a"
+        }
+      }
+    }
+  ]
+}

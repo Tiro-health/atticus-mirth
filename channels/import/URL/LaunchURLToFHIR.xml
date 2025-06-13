@@ -3,7 +3,7 @@
   <nextMetaDataId>4</nextMetaDataId>
   <name>LaunchURLToFHIR</name>
   <description></description>
-  <revision>61</revision>
+  <revision>150</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -18,7 +18,7 @@
         <port>80</port>
       </listenerConnectorProperties>
       <sourceConnectorProperties version="4.4.2">
-        <responseVariable>None</responseVariable>
+        <responseVariable>d1</responseVariable>
         <respondAfterProcessing>true</respondAfterProcessing>
         <processBatch>false</processBatch>
         <firstResponse>false</firstResponse>
@@ -57,73 +57,142 @@
     <transformer version="4.4.2">
       <elements>
         <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
-          <name></name>
+          <name>Parse URL</name>
           <sequenceNumber>0</sequenceNumber>
           <enabled>true</enabled>
-          <script>// added some logging
-/*try {
-	for each(key in sourceMap.keySet().toArray())
-		logger.info(&quot;source map - &quot; + key + &apos;: &apos; + sourceMap.get(key));
-	for each(key in globalMap.getVariables().keySet().toArray())
-		logger.info(&quot;global map - &quot; + key + &apos;: &apos; + globalMap.get(key));
-	for each(key in channelMap.keySet().toArray())
-		logger.info(&quot;channel map - &quot; + key + &apos;: &apos; + channelMap.get(key));
-} catch (error) {
-    // Log any errors for debugging purposes
-    logger.error(&quot;Error while logging the message: &quot; + error.message);
-    throw error; // Re-throw the error to handle it upstream if needed
-}*/
+          <script>// Source Transformer
+logger.info(&quot;In Source Transformer: Processing inbound message from URL.&quot;);
+
+/**
+ * Converts a raw gender code (M, F, V, or longer strings starting with these) to a FHIR-compliant gender string.
+ * Handles null/empty input, and defaults unrecognized values.
+ * Uses startsWith() for more flexible matching.
+ * @param {string} rawGender The raw gender string from the URL parameter (e.g., &apos;M&apos;, &apos;F&apos;, &apos;V&apos;, &apos;Male&apos;, &apos;Female&apos;, &apos;Vrouw&apos;).
+ * @returns {string} The FHIR gender string (&apos;male&apos;, &apos;female&apos;, &apos;other&apos;, &apos;unknown&apos;).
+ */
+function convertRawGenderToFhirGender(rawGender) {
+    var patientGenderFHIR = null;
+    // Normalize input for case-insensitive comparison, if not null/empty
+    var normalizedGender = (rawGender !== null &amp;&amp; rawGender !== &apos;&apos;) ? String(rawGender).toUpperCase() : null;
+
+    if (normalizedGender === null) {
+        // If gender parameter is not set or is empty
+        patientGenderFHIR = &quot;unknown&quot;;
+        logger.warn(&quot;Function: Patient gender parameter is not set or is empty. Defaulting to &apos;unknown&apos;.&quot;);
+    } else if (normalizedGender.startsWith(&quot;M&quot;)) { // Check if it starts with &apos;M&apos;
+        patientGenderFHIR = &quot;male&quot;;
+    } else if (normalizedGender.startsWith(&quot;F&quot;) || normalizedGender.startsWith(&quot;V&quot;)) { // Check if it starts with &apos;F&apos; or &apos;V&apos;
+        patientGenderFHIR = &quot;female&quot;;
+    } else {
+        // If it&apos;s set but doesn&apos;t start with &apos;M&apos;, &apos;F&apos;, or &apos;V&apos;
+        patientGenderFHIR = &quot;other&quot;;
+        logger.warn(&quot;Function: Unrecognized gender code received: &apos;&quot; + rawGender + &quot;&apos;. Defaulting to &apos;other&apos;.&quot;);
+    }
+    logger.info(&quot;Function: Mapped raw gender &apos;&quot; + rawGender + &quot;&apos; to FHIR gender: &apos;&quot; + patientGenderFHIR + &quot;&apos;.&quot;);
+    return patientGenderFHIR;
+}
+
+/**
+ * Converts a raw birth date string (e.g., YYYYMMDD, YYYY-MMDD, YYYYMM-DD)
+ * to FHIR-compliant YYYY-MM-DD format using split and join for initial cleanup,
+ * and then substring/join for final formatting.
+ * @param {string} rawDate The raw birth date string from the URL parameter.
+ * @returns {string|null} The formatted FHIR date string or null if unable to format.
+ */
+function convertRawDateToFhirDate(rawDate) {
+    if (rawDate === null || rawDate === &apos;&apos;) {
+        logger.warn(&quot;Function: Patient birth date parameter is not set or is empty. Returning null.&quot;);
+        return null;
+    }
+
+    // Step 1: Split on &apos;-&apos; and then join the parts. This effectively removes hyphens.
+    var parts = String(rawDate).split(&apos;-&apos;);
+    var digitsOnly = parts.join(&apos;&apos;);
+
+    // Step 2: Check if we have exactly 8 digits (YYYYMMDD)
+    if (digitsOnly.length === 8) {
+        var year = digitsOnly.substring(0, 4);
+        var month = digitsOnly.substring(4, 6);
+        var day = digitsOnly.substring(6, 8);
+
+        // Step 3: Construct the final YYYY-MM-DD format using an array and .join()
+        var formattedDate = [year, month, day].join(&apos;-&apos;);
+        logger.info(&quot;Function: Mapped raw birth date &apos;&quot; + rawDate + &quot;&apos; to FHIR format: &apos;&quot; + formattedDate + &quot;&apos;.&quot;);
+        return formattedDate;
+    } else {
+        logger.warn(&quot;Function: Birth date &apos;&quot; + rawDate + &quot;&apos; has &quot; + digitsOnly.length + &quot; digits after cleanup, expected 8. Cannot format. Returning null.&quot;);
+        return null;
+    }
+}
 
 try {
-	parameters = sourceMap.get(&quot;parameters&quot;);
-	if (parameters !== null) {
-	    patientId = parameters.getParameter(&quot;patient&quot;);
-	    patientGender = parameters.getParameter(&quot;sex&quot;);
-	    patientBirthDate = parameters.getParameter(&quot;dob&quot;);
-	    encounterId = parameters.getParameter(&quot;encounter&quot;);
-	    user = parameters.getParameter(&quot;user&quot;);
-	    supervisor = parameters.getParameter(&quot;supervisor&quot;);
-	} else {
-	    logger.error(&quot;Parameters object is null.&quot;);
-	}
-	
-	// validate query params
-	if (patientId !== null) {
-	   logger.info(&quot;Parameter &apos;patient&apos; is set, value: &quot; + patientId);
-	} else {
-	   logger.warn(&quot;Parameter &apos;patient&apos; is NOT set.&quot;);
-	}
-	if (encounterId !== null) {
-	   logger.info(&quot;Parameter &apos;encounter&apos; is set, value: &quot; + encounterId);
-	} else {
-	   logger.info(&quot;Parameter &apos;encounter&apos; is NOT set.&quot;);
-	}
-	
-	// Patient Information
-	channelMap.put(&quot;patientIdValue&quot;, patientId);
-	channelMap.put(&quot;patientIdSystem&quot;, &quot;https://fhir.nexuzhealth.com/standards/fhir/NamingSystem/kws/pm/patient/eadnr&quot;);
-	// channelMap.put(&quot;patientFamilyName&quot;, patientFamilyName); // Optional: Patient&apos;s family/last name
-	// channelMap.put(&quot;patientGivenName&quot;, patientGivenName);   // Optional: Patient&apos;s given/first name
-	channelMap.put(&quot;patientGender&quot;, patientGender);         // Optional: Patient&apos;s gender (e.g., &quot;male&quot;, &quot;female&quot;)
-	channelMap.put(&quot;patientBirthDate&quot;, patientBirthDate);   // Optional: Patient&apos;s birth date (YYYY-MM-DD)
-	
-	// Encounter Information
-	channelMap.put(&quot;encounterIdValue&quot;, encounterId);
-	channelMap.put(&quot;encounterIdSystem&quot;, &quot;https://fhir.nexuzhealth.com/standards/fhir/NamingSystem/kws/bifrost/receptie/cnr&quot;);
-	channelMap.put(&quot;encounterStatus&quot;, &quot;unknown&quot;); //  Encounter&apos;s status (e.g., &quot;planned&quot;, &quot;in-progress&quot;)
-	channelMap.put(&quot;encounterRespIdSystem&quot;, &quot;https://tiro.health/standards/fhir/NamingSystem/kws/user-id&quot;); // Optional, responsible identifier for the encounter 
-	channelMap.put(&quot;encounterRespIdValue&quot;, supervisor); // Optional, responsible identifier for the encounter 
-	// Practitioner Information
-	// channelMap.put(&quot;practitionerIdValue&quot;, practitionerIdValue);   // Optional: Practitioner identifier value
-	// channelMap.put(&quot;practitionerIdSystem&quot;, &quot;http://launch.com&quot;);  // Optional: Practitioner identifier system
-	// channelMap.put(&quot;practitionerFamilyName&quot;, practitionerFamilyName); // Optional: Practitioner&apos;s family/last name
-	// channelMap.put(&quot;practitionerGivenName&quot;, practitionerGivenName);   // Optional: Practitioner&apos;s given/first name
-	// channelMap.put(&quot;practitionerPrefix&quot;, practitionerPrefix);         // Optional: Practitioner&apos;s prefix (e.g., &quot;Dr.&quot;, &quot;Mr.&quot;)
+    var parameters = sourceMap.get(&quot;parameters&quot;);
+    var patientId = null;
+    var patientGenderRaw = null;
+    var patientBirthDateRaw = null;
+    var encounterId = null;
+    var user = null;
+    var supervisor = null;
 
-} catch (error) {
+    if (parameters !== null) {
+        patientId = parameters.getParameter(&quot;patient&quot;);
+        patientGenderRaw = parameters.getParameter(&quot;sex&quot;);
+        patientBirthDateRaw = parameters.getParameter(&quot;dob&quot;);
+        encounterId = parameters.getParameter(&quot;encounter&quot;);
+        user = parameters.getParameter(&quot;user&quot;);
+        supervisor = parameters.getParameter(&quot;supervisor&quot;);
+        logger.info(&quot;URL Parameters extracted.&quot;);
+    } else {
+        logger.error(&quot;Parameters object is null. Cannot extract URL parameters.&quot;);
+    }
+
+    // Validate query params (optional, but good for debugging)
+    if (patientId !== null) {
+        logger.info(&quot;Parameter &apos;patient&apos; is set, value: &quot; + patientId);
+    } else {
+        logger.warn(&quot;Parameter &apos;patient&apos; is NOT set.&quot;);
+    }
+    if (encounterId !== null) {
+        logger.info(&quot;Parameter &apos;encounter&apos; is set, value: &quot; + encounterId);
+    } else {
+        logger.info(&quot;Parameter &apos;encounter&apos; is NOT set.&quot;);
+    }
+    if (patientGenderRaw !== null &amp;&amp; patientGenderRaw !== &apos;&apos;) {
+        logger.info(&quot;Parameter &apos;sex&apos; (raw) is set, value: &quot; + patientGenderRaw);
+    } else {
+        logger.warn(&quot;Parameter &apos;sex&apos; is NOT set or is empty.&quot;);
+    }
+    if (patientBirthDateRaw !== null &amp;&amp; patientBirthDateRaw !== &apos;&apos;) {
+        logger.info(&quot;Parameter &apos;dob&apos; (raw) is set, value: &quot; + patientBirthDateRaw);
+    } else {
+        logger.warn(&quot;Parameter &apos;dob&apos; is NOT set or is empty.&quot;);
+    }
+
+    // --- Apply Conversion Functions ---
+    var patientGenderFHIR = convertRawGenderToFhirGender(patientGenderRaw);
+    var patientBirthDateFHIR = convertRawDateToFhirDate(patientBirthDateRaw);
+    // --- End Apply Conversion Functions ---
+
+    // Parse query params and store in channelMap
+    // Patient Information
+    channelMap.put(&quot;patientIdValue&quot;, patientId);
+    channelMap.put(&quot;patientIdSystem&quot;, &quot;https://fhir.nexuzhealth.com/standards/fhir/NamingSystem/kws/pm/patient/eadnr&quot;);
+    channelMap.put(&quot;patientGender&quot;, patientGenderFHIR); // Use the mapped FHIR gender
+    channelMap.put(&quot;patientBirthDate&quot;, patientBirthDateFHIR); // Use the mapped FHIR birth date
+
+    // Encounter Information
+    channelMap.put(&quot;encounterIdValue&quot;, encounterId);
+    channelMap.put(&quot;encounterIdSystem&quot;, &quot;https://fhir.nexuzhealth.com/standards/fhir/NamingSystem/kws/bifrost/receptie/cnr&quot;);
+    channelMap.put(&quot;encounterStatus&quot;, &quot;unknown&quot;); // Encounter&apos;s status (e.g., &quot;planned&quot;, &quot;in-progress&quot;)
+    channelMap.put(&quot;encounterRespIdSystem&quot;, &quot;https://tiro.health/standards/fhir/NamingSystem/kws/user-id&quot;); // Optional, responsible identifier for the encounter
+    channelMap.put(&quot;encounterRespIdValue&quot;, supervisor); // Optional, responsible identifier for the encounter
+
+    logger.info(&quot;Channel Map populated with patient and encounter data.&quot;);
+
+} catch (e) {
     // Log any errors for debugging purposes
-    logger.error(&quot;Error while parsing the URL: &quot; + error.message);
-    throw error; // Re-throw the error to handle it upstream if needed
+    logger.error(&quot;Fatal error in Source Transformer: &quot; + e.message + &quot;\nStack: &quot; + e.stack);
+    throw e; // Re-throw the error to ensure the message fails in Mirth.
 }</script>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
       </elements>
@@ -185,9 +254,9 @@ try {
         <method>post</method>
         <headers class="linked-hash-map">
           <entry>
-            <string>x-user-id</string>
+            <string>x-channel-name</string>
             <list>
-              <string>FILL ME (optional, if you want to specify a specific user instead of using your service account)</string>
+              <string>${channelName}</string>
             </list>
           </entry>
         </headers>
@@ -205,8 +274,8 @@ try {
         <useAuthentication>true</useAuthentication>
         <authenticationType>Basic</authenticationType>
         <usePreemptiveAuthentication>true</usePreemptiveAuthentication>
-        <username>FILL ME</username>
-        <password>FILL ME</password>
+        <username>${tiroUsername}</username>
+        <password>${tiroPassword}</password>
         <content>${transactionBundle}</content>
         <contentType>application/json</contentType>
         <dataTypeBinary>false</dataTypeBinary>
@@ -459,19 +528,22 @@ try {
             <enabled>true</enabled>
             <script>logger.info(&quot;In response transformer&quot;);
 try{
+	
 	// Capture the HTTP response status code
 	// Capture the HTTP response status code
 	var statusMessage = $(&apos;responseStatusLine&apos;);
 	var statusCode = $(&apos;responseStatusCode&apos;); // only available in MIRTH &gt;=4.5.2
 	if (!statusCode) {
 		var parts = statusMessage.trim().split(&apos; &apos;);
-		var statusCode = parts[1]
+		statusCode = parts[1]
 	}
+	logger.info(&quot;Status code response data import: &quot; + statusCode);
      var responseBody = response.getMessage();
+     logger.info(&quot;Got the following response from Tiro.health&quot; + responseBody);
      
 	// Check if the status code is in the 2xx range
-	if(statusCode==&quot;200&quot;||statusCode == &quot;201&quot;) {
-		&#xd;
+	var statusCodeInt =  parseInt(statusCode);
+	if(statusCodeInt &gt;= 200 &amp;&amp; statusCodeInt &lt; 300) {
 		// get the subject id, so the user does not need to select the subject
 		var fhirBundle = JSON.parse(responseBody);&#xd;		var patientId = null;
 		var taskId = null;
@@ -494,20 +566,21 @@ try{
 		    
 		}    
 		// TODO redirect to edit page if it&apos;s an update&#xd;		channelMap.put(&quot;redirect&quot;, &quot;https://app.tiro.health/reports/create?task=Task/&quot; + taskId + &quot;&amp;subject=Patient/&quot; + patientId);
-	     logger.info(&quot;Status is 2xx. Redirect URL set to app.tiro.health&quot;);
+	     logger.info(&quot;Status is 2xx. Redirect URL set to Tiro.health&quot;);
 	} else {
 	    var error = &quot;We encountered an integration error. Please contact your IT department for assistance.&quot;;
-	
-	    var detailedError = &quot;Error in MIRTH channel:\n&quot; + 
+	    var detailedError = &quot;Error in MIRTH channel:\n&quot; +
 	    		&quot;name: &quot; + channelName + &quot;\n&quot; +
 	    		&quot;id: &quot; + channelId + &quot;\n&quot; +
 	    		&quot;statusCode: &quot; + statusCode + &quot;\n&quot; +
-	    		&quot;statusMessage: &quot; + statusMessage + &quot;\n&quot; +
-	    		&quot;responseBody: &quot; + responseBody + &quot;\n&quot;;
+	    		&quot;statusMessage: &quot; + statusMessage + &quot;\n&quot;;
+	    
 	    channelMap.put(&quot;redirect&quot;, &quot;https://reports.tiro.health/ui/error?error=&quot; + encodeURIComponent(error) + &quot;&amp;detailed_error=&quot; + encodeURIComponent(detailedError));
          logger.info(&quot;Status is NOT 2xx. Redirect URL set to an error screen.&quot;);
-	}
-	responseMap.put(&quot;statusCode&quot;, &quot;307&quot;);
+	} 
+	
+	channelMap.put(&quot;statusCode&quot;, &quot;307&quot;);
+	logger.info(&quot;Redirect to: &quot; + channelMap.get(&quot;redirect&quot;));
 } catch (error) {
     logger.error(&quot;Error occurred: &quot; + error.message);
     throw error; // Pass the error upstream
@@ -589,7 +662,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1749627826646</time>
+        <time>1749818954284</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>

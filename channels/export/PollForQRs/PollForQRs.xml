@@ -3,7 +3,7 @@
   <nextMetaDataId>9</nextMetaDataId>
   <name>PollForQRs</name>
   <description></description>
-  <revision>84</revision>
+  <revision>95</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -79,10 +79,28 @@ return message;</script>
     <transformer version="4.4.2">
       <elements>
         <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
-          <name></name>
+          <name>Add now and lastNow to channelMap</name>
           <sequenceNumber>0</sequenceNumber>
           <enabled>true</enabled>
-          <script>// parse msg and fill channelMap&#xd;var msg = new XML(connectorMessage.getRawData());
+          <script>// parse msg and fill channelMap
+var msg = new XML(connectorMessage.getRawData());
+var now = msg.Now.toString();
+var lastNow = msg.LastNow.toString();
+
+channelMap.put(&apos;now&apos;, now);
+channelMap.put(&apos;lastNow&apos;, lastNow);
+
+
+logger.info(&quot;now: &quot; + now);
+logger.info(&quot;lastNow: &quot; + lastNow);
+return msg;</script>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+          <name>Add channelName to channelMap</name>
+          <sequenceNumber>1</sequenceNumber>
+          <enabled>true</enabled>
+          <script>// parse msg and fill channelMap
+var msg = new XML(connectorMessage.getRawData());
 var now = msg.Now.toString();
 var lastNow = msg.LastNow.toString();
 
@@ -153,9 +171,9 @@ return msg;</script>
         <method>get</method>
         <headers class="linked-hash-map">
           <entry>
-            <string>x-user-id</string>
+            <string>x-channel-name</string>
             <list>
-              <string>Optional FILL ME (if you want to specify the exact user)</string>
+              <string>${channelName}</string>
             </list>
           </entry>
         </headers>
@@ -194,8 +212,8 @@ return msg;</script>
         <useAuthentication>true</useAuthentication>
         <authenticationType>Basic</authenticationType>
         <usePreemptiveAuthentication>true</usePreemptiveAuthentication>
-        <username>FILL ME</username>
-        <password>FILL ME</password>
+        <username>${tiroUsername}</username>
+        <password>${tiroPassword}</password>
         <content></content>
         <contentType>application/json</contentType>
         <dataTypeBinary>false</dataTypeBinary>
@@ -405,7 +423,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1749112243680</time>
+        <time>1749818584685</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>

@@ -11,7 +11,15 @@ This channel polls every minute and does a FHIR search query to get all QRs that
 
 For every QuestionnaireResponse that was found, we create a collection bundle with the QuestionnaireResponse, Patient and Encounter and route it to another channel.
 
-Before importing, ensure you replace all 'FILL ME' placeholders in the `PollFOrQRs.xml` file with the appropriate values. For the necessary credentials, please contact [support@tiro.health](mailto:support@tiro.health).
+## Configuration
+This channel works with a Configuration Map (`Settings` → `Configuration Map` tab). The following keys are expected:
+
+| Key                 | Description                                                                 |
+|---------------------|-----------------------------------------------------------------------------|
+| `tiroUsername`      | Authentication username |
+| `tiroPassword`      | Authentication password |
+
+Please contact [support@tiro.health](mailto:support@tiro.health) for these credentials.
 
 ## Sequence Diagram
 ```mermaid

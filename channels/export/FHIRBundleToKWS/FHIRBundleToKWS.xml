@@ -3,7 +3,7 @@
   <nextMetaDataId>3</nextMetaDataId>
   <name>FHIRBundleToKWS</name>
   <description></description>
-  <revision>5</revision>
+  <revision>17</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -44,7 +44,7 @@
       <useResponseHeadersVariable>false</useResponseHeadersVariable>
       <charset>UTF-8</charset>
       <contextPath></contextPath>
-      <timeout>30000</timeout>
+      <timeout>30001</timeout>
       <staticResources/>
     </properties>
     <transformer version="4.4.2">
@@ -54,10 +54,6 @@
           <sequenceNumber>0</sequenceNumber>
           <enabled>true</enabled>
           <script>logger.info(&quot;Incoming message:&quot; + msg);
-
-channelMap.put(&quot;ziekenhuis&quot;, &quot;JYZ&quot;);
-channelMap.put(&quot;appNaam&quot;, &quot;JYZ2KWS_TIRO&quot;);
-
 
 var input = JSON.parse(connectorMessage.getRawData());
 logger.info(&quot;Parsed message:&quot; + JSON.stringify(input));
@@ -193,10 +189,10 @@ try {
       </elements>
       <inboundTemplate encoding="base64"></inboundTemplate>
       <outboundTemplate encoding="base64"></outboundTemplate>
-      <inboundDataType>JSON</inboundDataType>
+      <inboundDataType>RAW</inboundDataType>
       <outboundDataType>RAW</outboundDataType>
-      <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
-        <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+      <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="4.4.2">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="4.4.2">
           <splitType>JavaScript</splitType>
           <batchScript></batchScript>
         </batchProperties>
@@ -278,8 +274,8 @@ try {
             <script>var ead = channelMap.get(&quot;ead&quot;);
 var cnr = channelMap.get(&quot;cnr&quot;);
 var verslagExternId = channelMap.get(&quot;verslagExternId&quot;);
-var ziekenhuis = channelMap.get(&quot;ziekenhuis&quot;);
-var appNaam = channelMap.get(&quot;appNaam&quot;);
+var ziekenhuis = configurationMap.get(&quot;tiroKwsZiekenhuis&quot;);
+var appNaam = configurationMap.get(&quot;tiroKwsAppNaam&quot;);
 
 // validation of required values
 if (ead == null) {
@@ -426,8 +422,8 @@ var cnr = channelMap.get(&quot;cnr&quot;);
 var verslagExternId = channelMap.get(&quot;verslagExternId&quot;);
 var reportText = channelMap.get(&quot;reportText&quot;);
 var supervisor = channelMap.get(&quot;supervisor&quot;);
-var ziekenhuis = channelMap.get(&quot;ziekenhuis&quot;);
-var appNaam = channelMap.get(&quot;appNaam&quot;);
+var ziekenhuis = configurationMap.get(&quot;tiroKwsZiekenhuis&quot;);
+var appNaam = configurationMap.get(&quot;tiroKwsAppNaam&quot;);
 
 
 // validation of required values
@@ -553,7 +549,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1749626423948</time>
+        <time>1749815929686</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>
@@ -562,6 +558,5 @@ return;</undeployScript>
       </pruningSettings>
       <userId>1</userId>
     </metadata>
-    <channelTags/>
   </exportData>
 </channel>
