@@ -3,7 +3,7 @@
   <nextMetaDataId>4</nextMetaDataId>
   <name>LaunchURLToFHIR</name>
   <description></description>
-  <revision>150</revision>
+  <revision>37</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -397,6 +397,20 @@ try {
                  }
              ],
          },
+        &quot;identifier&quot;: [{&quot;system&quot;: encounterIdSystem, &quot;value&quot;: encounterIdValue}], // Use CNR to identify the complete qr task and do a conditional create
+         &quot;input&quot;: [
+            {
+                &quot;type&quot;: {
+                    &quot;coding&quot;: [
+                        {
+                            &quot;system&quot;: &quot;http://fhir.tiro.health/CodeSystem/task-input&quot;,
+                            &quot;code&quot;: &quot;post-submit-redirect&quot;,
+                        }
+                    ]
+                },
+                &quot;valueUrl&quot;: &quot;http://localhost:12345&quot;, // After submit we want to redirect back to KWS
+            }
+        ],
          &quot;status&quot;: &quot;draft&quot;,
          &quot;for&quot;: {
 	        &quot;reference&quot;: patientUuid
@@ -485,8 +499,8 @@ try {
         &quot;resource&quot;: task,
         &quot;fullUrl&quot;: taskUuid,
         &quot;request&quot;: {
-            &quot;method&quot;: &quot;POST&quot;, // TODO change to conditional create based on CNR
-            &quot;url&quot;: &quot;Task&quot;
+            &quot;method&quot;: &quot;POST&quot;, 
+            &quot;url&quot;: &quot;Task?identifier=&quot; + encodeURIComponent(encounterIdSystem + &quot;|&quot; + encounterIdValue) // Use CNR to identify the complete qr task and do a conditional create
         }
 	});
 	
@@ -526,8 +540,19 @@ try {
             <name></name>
             <sequenceNumber>0</sequenceNumber>
             <enabled>true</enabled>
-            <script>logger.info(&quot;In response transformer&quot;);
-try{
+            <script>logger.info(&quot;In response transformer&quot;);&#xd;&#xd;
+function getTaskInputByCodeAndSystem(task, code, system) {
+	if (task.input == null) {
+		return null;
+	}
+	for (var i = 0; i &lt; task.input; i++) {
+		var inputEntry = task.input[i];
+		if (inputEntry.type.coding[0].code == code &amp;&amp; inputEntry.type.coding[0].system == system) {
+			return inputEntry;
+		}
+	}
+	return null;
+}&#xd;&#xd;try{
 	
 	// Capture the HTTP response status code
 	// Capture the HTTP response status code
@@ -545,27 +570,37 @@ try{
 	var statusCodeInt =  parseInt(statusCode);
 	if(statusCodeInt &gt;= 200 &amp;&amp; statusCodeInt &lt; 300) {
 		// get the subject id, so the user does not need to select the subject
-		var fhirBundle = JSON.parse(responseBody);&#xd;		var patientId = null;
-		var taskId = null;
+		var fhirBundle = JSON.parse(responseBody);&#xd;
 		if (fhirBundle &amp;&amp; fhirBundle.entry &amp;&amp; Array.isArray(fhirBundle.entry)) {
 		    for (var i = 0; i &lt; fhirBundle.entry.length; i++) {
 		        var entry = fhirBundle.entry[i];
-		        if (entry.resource &amp;&amp; entry.resource.resourceType === &apos;Patient&apos;) {
-		            patientId = entry.resource.id;
-		            logger.info(&quot;Patient id found&quot;);
-		        }
 		        if (entry.resource &amp;&amp; entry.resource.resourceType === &apos;Task&apos;) {
-		            taskId = entry.resource.id;
+		            var task = entry.resource;
 		            logger.info(&quot;Task id found&quot;);
-
-		        }
-		        if (taskId &amp;&amp; patientId) {
-		        	break;
+		            if (entry.resource.for == null || entry.resource.for.reference == null) {
+		            	throw Error(&quot;Task &quot; + task.id + &quot; does not have a patient reference.&quot;)
+		            }
+				  var patientRef = task.for.reference;
+				  var qrTaskInput = getTaskInputByCodeAndSystem(task, &quot;http://fhir.tiro.health/CodeSystem/task-input&quot;, &quot;questionnaire-response&quot;);
+		            var questionnaireResponseRef = null;
+		            if (qrTaskInput) {
+		            	questionnaireResponseRef = qrTaskInput.valueReference.reference;
+		            }
+		            if (entry.response.status == &quot;201&quot;) {
+		        	  	channelMap.put(&quot;redirect&quot;, &quot;https://app.tiro.health/reports/create?task=Task/&quot; + task.id + &quot;&amp;subject=&quot; + patientRef);
+		        	  }
+		        	  if (entry.response.status == &quot;200&quot;) {
+		        	  	if (questionnaireResponseRef == null) {
+		        	  		logger.warn(&quot;No questionnaire response reference for a task that already exists&quot;);
+		        	  		channelMap.put(&quot;redirect&quot;, &quot;https://app.tiro.health/reports/create?task=Task/&quot; + task.id + &quot;&amp;subject=&quot; + patientRef);
+		        	  	} else {
+		        	  		channelMap.put(&quot;redirect&quot;, &quot;https://app.tiro.health/reports/edit?task=Task/&quot; + task.id + &quot;&amp;subject=&quot; + patientRef + &quot;&amp;response=&quot; + questionnaireResponseRef);
+		        	  	}
+		        	  }
 		        }
 		    }
 		    
-		}    
-		// TODO redirect to edit page if it&apos;s an update&#xd;		channelMap.put(&quot;redirect&quot;, &quot;https://app.tiro.health/reports/create?task=Task/&quot; + taskId + &quot;&amp;subject=Patient/&quot; + patientId);
+		}    &#xd;
 	     logger.info(&quot;Status is 2xx. Redirect URL set to Tiro.health&quot;);
 	} else {
 	    var error = &quot;We encountered an integration error. Please contact your IT department for assistance.&quot;;
@@ -662,7 +697,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1749818954284</time>
+        <time>1751543534540</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>
