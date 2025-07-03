@@ -3,7 +3,7 @@
   <nextMetaDataId>3</nextMetaDataId>
   <name>FHIRBundleToKWS</name>
   <description></description>
-  <revision>17</revision>
+  <revision>9</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -123,10 +123,12 @@ try {
     }
 
     // check if it&apos;s an update
-    if (questionnaireResponse.meta &amp;&amp; questionnaireResponse.meta.versionId &amp;&amp; questionnaireResponse.meta.versionId != &apos;1&apos;) {
+    if (questionnaireResponse.status == &apos;ammended&apos;) {
         channelMap.put(&quot;isUpdate&quot;, true);
-    } else {
+    } else if (questionnaireResponse.status == &apos;completed&apos;) {
         channelMap.put(&quot;isUpdate&quot;, false);
+    } else {
+    	   throw Error(&quot;Unsupported QuestionnaireResponse status &quot; + questionnaireResponse.status);
     }
 
 
@@ -549,7 +551,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1749815929686</time>
+        <time>1751467124746</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>

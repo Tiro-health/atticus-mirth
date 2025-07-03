@@ -82,7 +82,7 @@
           "type": "Encounter",
           "reference": "urn:uuid:5302b6e2-286c-505d-988d-14a7234a8754"
         },
-        "status": "in-progress",
+        "status": "completed",
         "text": {
           "status": "generated",
           "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">\n   <pre>\n      Comorbidity? YES\n       Cardial Comorbidity? YES\n        Angina? YES\n        MI? NO\n       Vascular Comorbidity?\n        (no answers)\n       ...\n      Histopathology\n       Abdominal\n        pT category: 1a\n       ...\n     </pre>\n  </div>",
