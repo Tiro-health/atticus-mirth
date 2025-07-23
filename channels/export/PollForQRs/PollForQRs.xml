@@ -188,7 +188,7 @@ return msg;</script>
           <entry>
             <string>status</string>
             <list>
-              <string>completed</string>
+              <string>completed,amended</string>
             </list>
           </entry>
           <entry>
