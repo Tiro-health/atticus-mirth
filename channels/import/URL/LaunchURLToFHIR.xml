@@ -541,14 +541,14 @@ try {
             <sequenceNumber>0</sequenceNumber>
             <enabled>true</enabled>
             <script>logger.info(&quot;In response transformer&quot;);&#xd;&#xd;
-function getTaskInputByCodeAndSystem(task, code, system) {
-	if (task.input == null) {
+function getTaskOutputByCodeAndSystem(task, code, system) {
+	if (task.output == null) {
 		return null;
 	}
-	for (var i = 0; i &lt; task.input; i++) {
-		var inputEntry = task.input[i];
-		if (inputEntry.type.coding[0].code == code &amp;&amp; inputEntry.type.coding[0].system == system) {
-			return inputEntry;
+	for (var i = 0; i &lt; task.output.length; i++) {
+		var outputEntry = task.output[i];
+		if (outputEntry.type.coding[0].code == code &amp;&amp; outputEntry.type.coding[0].system == system) {
+			return outputEntry;
 		}
 	}
 	return null;
@@ -581,10 +581,10 @@ function getTaskInputByCodeAndSystem(task, code, system) {
 		            	throw Error(&quot;Task &quot; + task.id + &quot; does not have a patient reference.&quot;)
 		            }
 				  var patientRef = task.for.reference;
-				  var qrTaskInput = getTaskInputByCodeAndSystem(task, &quot;http://fhir.tiro.health/CodeSystem/task-input&quot;, &quot;questionnaire-response&quot;);
+				  var qrTaskOutput = getTaskOutputByCodeAndSystem(task, &quot;questionnaire-response&quot;, &quot;http://fhir.tiro.health/CodeSystem/task-output&quot;);
 		            var questionnaireResponseRef = null;
-		            if (qrTaskInput) {
-		            	questionnaireResponseRef = qrTaskInput.valueReference.reference;
+		            if (qrTaskOutput) {
+		            	questionnaireResponseRef = qrTaskOutput.valueReference.reference;
 		            }
 		            if (entry.response.status == &quot;201&quot;) {
 		        	  	channelMap.put(&quot;redirect&quot;, &quot;https://app.tiro.health/reports/create?task=Task/&quot; + task.id + &quot;&amp;subject=&quot; + patientRef);
