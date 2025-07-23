@@ -123,7 +123,7 @@ try {
     }
 
     // check if it&apos;s an update
-    if (questionnaireResponse.status == &apos;ammended&apos;) {
+    if (questionnaireResponse.status == &apos;amended&apos;) {
         channelMap.put(&quot;isUpdate&quot;, true);
     } else if (questionnaireResponse.status == &apos;completed&apos;) {
         channelMap.put(&quot;isUpdate&quot;, false);
