@@ -6,8 +6,8 @@ This sample demonstrates how to poll for any reports that have been submitted in
 Polling for QuestionnaireResponses is useful in networks where incoming requests from external systems are not possible or not desired. By periodically checking for new reports, the channel can ensure that all submitted reports are processed and routed to the appropriate channels for further action.
 
 ### How it Works
-This channel polls every minute and does a FHIR search query to get all QRs that are completed in the current polling interval:<br>
-<code>GET /fhir/r5/QuestionnaireResponse?_lastUpdated=ge[X]&status=completed&_include=subject&_include=encounter</code>
+This channel polls every minute and does a FHIR search query to get all QRs that are completed or amended in the current polling interval:<br>
+<code>GET /fhir/r5/QuestionnaireResponse?_lastUpdated=ge[X]&status=completed,amended&_include=subject&_include=encounter</code>
 
 For every QuestionnaireResponse that was found, we create a collection bundle with the QuestionnaireResponse, Patient and Encounter and route it to another channel.
 
