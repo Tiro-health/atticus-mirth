@@ -32,7 +32,11 @@ sequenceDiagram
     deactivate T
 
     alt Success (e.g., HTTP 2xx)
-        M-->>C: HTTP 302 Redirect to "Report Creation Page"
+        alt New Task
+            M-->>C: HTTP 302 Redirect to "Report Creation Page"
+        else Update Task
+            M-->>C: HTTP 302 Redirect to "Report Edit Page"
+        end
     else Failure (e.g., HTTP 4xx/5xx)
         M-->>C: HTTP 302 Redirect to "Error Screen"
     end
