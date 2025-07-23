@@ -12,7 +12,7 @@
       <pollConnectorProperties version="4.4.2">
         <pollingType>INTERVAL</pollingType>
         <pollOnStart>false</pollOnStart>
-        <pollingFrequency>60000</pollingFrequency>
+        <pollingFrequency>10000</pollingFrequency>
         <pollingHour>0</pollingHour>
         <pollingMinute>0</pollingMinute>
         <cronJobs/>
