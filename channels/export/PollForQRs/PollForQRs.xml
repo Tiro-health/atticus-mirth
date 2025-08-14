@@ -3,7 +3,7 @@
   <nextMetaDataId>9</nextMetaDataId>
   <name>PollForQRs</name>
   <description></description>
-  <revision>95</revision>
+  <revision>109</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -12,7 +12,7 @@
       <pollConnectorProperties version="4.4.2">
         <pollingType>INTERVAL</pollingType>
         <pollOnStart>false</pollOnStart>
-        <pollingFrequency>10000</pollingFrequency>
+        <pollingFrequency>5000</pollingFrequency>
         <pollingHour>0</pollingHour>
         <pollingMinute>0</pollingMinute>
         <cronJobs/>
@@ -50,9 +50,7 @@
         </resourceIds>
         <queueBufferSize>1000</queueBufferSize>
       </sourceConnectorProperties>
-      <script>logger.info(&apos;Start polling&apos;);
-
-function getCurrentLocalTimestamp() {
+      <script>function getCurrentLocalTimestamp() {
 	// var now = DateUtil.getCurrentDate(&quot;yyy-MM-dd&apos;T&apos;HH:mm:ss.SSS&apos;Z&apos;&quot;); Does not take timezone in account
    var formatter = new Packages.java.text.SimpleDateFormat(&quot;yyy-MM-dd&apos;T&apos;HH:mm:ss.SSS&apos;Z&apos;&quot;); 
    // your local TZ
@@ -91,25 +89,6 @@ channelMap.put(&apos;now&apos;, now);
 channelMap.put(&apos;lastNow&apos;, lastNow);
 
 
-logger.info(&quot;now: &quot; + now);
-logger.info(&quot;lastNow: &quot; + lastNow);
-return msg;</script>
-        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
-        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
-          <name>Add channelName to channelMap</name>
-          <sequenceNumber>1</sequenceNumber>
-          <enabled>true</enabled>
-          <script>// parse msg and fill channelMap
-var msg = new XML(connectorMessage.getRawData());
-var now = msg.Now.toString();
-var lastNow = msg.LastNow.toString();
-
-channelMap.put(&apos;now&apos;, now);
-channelMap.put(&apos;lastNow&apos;, lastNow);
-
-
-logger.info(&quot;now: &quot; + now);
-logger.info(&quot;lastNow: &quot; + lastNow);
 return msg;</script>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
       </elements>
@@ -244,7 +223,7 @@ return msg;</script>
           <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
             <sequenceNumber>0</sequenceNumber>
             <enabled>true</enabled>
-            <script>logger.info(&quot;In response transformer&quot;);
+            <script>// logger.info(&quot;In response transformer&quot;);
 
 function getEntryByReference(bundle, reference) {
     // Iterate the Bundle entries
@@ -268,8 +247,8 @@ try {
         var statusCode = parts[1]
     }
     var responseBody = response.getMessage();
-    logger.info(&quot;GET QR response code: &quot; + statusCode);
-    logger.info(&quot;GET QR  response body: &quot; + responseBody);
+    // logger.info(&quot;GET QR response code: &quot; + statusCode);
+    // logger.info(&quot;GET QR  response body: &quot; + responseBody);
     // Check if the status code is in the 2xx range
     if (statusCode != &quot;200&quot; &amp;&amp; statusCode != &quot;201&quot;) {
         logger.error(&quot;GET QRs returns unexpected HTTP status: &quot; + statusCode + &quot;, body: &quot; + responseBody);
@@ -277,7 +256,7 @@ try {
         return;
     }
 
-    logger.info(&quot;Successfully received QuestionnaireResponse Bundle. Attempting to parse and route individual QRs.&quot;);
+    // logger.info(&quot;Successfully received QuestionnaireResponse Bundle. Attempting to parse and route individual QRs.&quot;);
     var bundle;
     try {
         bundle = JSON.parse(responseBody);
@@ -288,7 +267,7 @@ try {
     }
 
     if (!bundle.entry || bundle.entry.length === 0) {
-        logger.info(&quot;FHIR Bundle contains no entries. No QRs to route downstream.&quot;);
+        // logger.info(&quot;FHIR Bundle contains no entries. No QRs to route downstream.&quot;);
         responseStatus = SENT;
         return;
     }
@@ -316,7 +295,7 @@ try {
                     &quot;fullUrl&quot;: patientEntry.fullUrl
                 });
             } else {
-            	logger.warn(&quot;No patient entry found&quot;);
+            	// logger.warn(&quot;No patient entry found&quot;);
             }
             if (encounterEntry) {
                 collectionBundle.entry.push({
@@ -334,9 +313,9 @@ try {
             var downstreamChannelName = &quot;FHIRBundleToKWS&quot;;
             try {
                 router.routeMessage(downstreamChannelName, collectionBundlePayload);
-                logger.info(&apos;Successfully routed QuestionnaireResponse &apos; + qrResource.id + &apos; to channel: &apos; + downstreamChannelName);
+                // logger.info(&apos;Successfully routed QuestionnaireResponse &apos; + qrResource.id + &apos; to channel: &apos; + downstreamChannelName);
             } catch (routeError) {
-                logger.error(&apos;Error routing QR &apos; + qrResource.id + &apos; to channel &apos; + downstreamChannelName + &apos;: &apos; + routeError.message);
+                // logger.error(&apos;Error routing QR &apos; + qrResource.id + &apos; to channel &apos; + downstreamChannelName + &apos;: &apos; + routeError.message);
             }
         }
     }
@@ -423,7 +402,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1749818584685</time>
+        <time>1755162572851</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>

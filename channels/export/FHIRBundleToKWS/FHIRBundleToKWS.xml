@@ -3,7 +3,7 @@
   <nextMetaDataId>3</nextMetaDataId>
   <name>FHIRBundleToKWS</name>
   <description></description>
-  <revision>9</revision>
+  <revision>21</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -53,10 +53,10 @@
           <name>ParseFhirBundle</name>
           <sequenceNumber>0</sequenceNumber>
           <enabled>true</enabled>
-          <script>logger.info(&quot;Incoming message:&quot; + msg);
+          <script>// logger.info(&quot;Incoming message:&quot; + msg);
 
 var input = JSON.parse(connectorMessage.getRawData());
-logger.info(&quot;Parsed message:&quot; + JSON.stringify(input));
+// logger.info(&quot;Parsed message:&quot; + JSON.stringify(input));
 
 function getIdentifierValue(resource, system) {
     // Iterate the identifiers
@@ -64,7 +64,7 @@ function getIdentifierValue(resource, system) {
         for (var i = 0; i &lt; resource.identifier.length; i++) {
             var identifier = resource.identifier[i];
             if (identifier.system == system) {
-                logger.info(&quot;Identifier with value &quot; + identifier.value + &quot; found for system &quot; + system);
+                // logger.info(&quot;Identifier with value &quot; + identifier.value + &quot; found for system &quot; + system);
                 return identifier.value;
             }
         }
@@ -105,7 +105,7 @@ try {
     }
     // parse questionnaireResponse
     var verslagExternId = getIdentifierValue(questionnaireResponse, &quot;http://tiro.health/fhir/NamingSystem/report-id&quot;);
-    logger.info(&quot;verslagExternId found: &quot; + verslagExternId);
+    // logger.info(&quot;verslagExternId found: &quot; + verslagExternId);
     channelMap.put(&quot;verslagExternId&quot;, verslagExternId);
 
     // Get plaintext summary
@@ -113,10 +113,10 @@ try {
         for (var i = 0; i &lt; questionnaireResponse.text.extension.length; i++) {
             var extension = questionnaireResponse.text.extension[i];
             if (extension.valueAttachment &amp;&amp; extension.valueAttachment.contentType == &apos;text/plain&apos;) {
-                logger.info(&quot;Plaintext report found:&quot; + extension.valueAttachment.data);
+                // logger.info(&quot;Plaintext report found:&quot; + extension.valueAttachment.data);
                 // Decode base 64
                 var reportText = Packages.java.lang.String(FileUtil.decode(extension.valueAttachment.data));
-                logger.info(&quot;Decoded plaintext report: &quot; + reportText);
+                // logger.info(&quot;Decoded plaintext report: &quot; + reportText);
                 channelMap.put(&quot;reportText&quot;, reportText);
             }
         }
@@ -139,7 +139,7 @@ try {
         }
         // parse patient
         var ead = getIdentifierValue(patient, &quot;https://fhir.nexuzhealth.com/standards/fhir/NamingSystem/kws/pm/patient/eadnr&quot;);
-        logger.info(&quot;ead found: &quot; + ead);
+        // logger.info(&quot;ead found: &quot; + ead);
         channelMap.put(&quot;ead&quot;, ead);
     }
 
@@ -152,7 +152,7 @@ try {
 
         // parse encounter
         var cnr = getIdentifierValue(encounter, &quot;https://fhir.nexuzhealth.com/standards/fhir/NamingSystem/kws/bifrost/receptie/cnr&quot;);
-        logger.info(&quot;cnr found: &quot; + cnr);
+        // logger.info(&quot;cnr found: &quot; + cnr);
         channelMap.put(&quot;cnr&quot;, cnr);
 
         // parse supervisor
@@ -164,7 +164,7 @@ try {
                         if (participant.actor &amp;&amp; participant.actor.identifier) {
                             var identifier = participant.actor.identifier;
                             if (identifier.system == &apos;https://tiro.health/standards/fhir/NamingSystem/kws/user-id&apos; &amp;&amp; identifier.value) {
-                                logger.info(&quot;Supervisor user ID found: &quot; + identifier.value);
+                                // logger.info(&quot;Supervisor user ID found: &quot; + identifier.value);
                                 channelMap.put(&quot;supervisor&quot;, identifier.value);
                                 break;
                             } else {
@@ -278,6 +278,7 @@ var cnr = channelMap.get(&quot;cnr&quot;);
 var verslagExternId = channelMap.get(&quot;verslagExternId&quot;);
 var ziekenhuis = configurationMap.get(&quot;tiroKwsZiekenhuis&quot;);
 var appNaam = configurationMap.get(&quot;tiroKwsAppNaam&quot;);
+var reportText = channelMap.get(&quot;reportText&quot;);
 
 // validation of required values
 if (ead == null) {
@@ -303,7 +304,8 @@ if (ziekenhuis == null) {
 
 // delete bestaand verslag in KWS
 var xmlDelete = &apos;&lt;FILL ME&gt;&apos;
-&#xd;logger.info(&quot;Delete XML to be sent: &quot; + xmlDelete);
+
+&#xd;// logger.info(&quot;Delete XML to be sent: &quot; + xmlDelete);
 channelMap.put(&quot;deleteXml&quot;, xmlDelete);</script>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         </elements>
@@ -347,10 +349,10 @@ channelMap.put(&quot;deleteXml&quot;, xmlDelete);</script>
             <sequenceNumber>0</sequenceNumber>
             <enabled>true</enabled>
             <script>if (channelMap.get(&quot;isUpdate&quot;) == false) {
-	logger.info(&quot;No need to send delete XML&quot;);
+	// logger.info(&quot;No need to send delete XML&quot;);
 	return false; // Don&apos;t send a delete
 } else {
-	logger.info(&quot;Send a delete XML&quot;);
+	// logger.info(&quot;Send a delete XML&quot;);
 	return true;
 }</script>
           </com.mirth.connect.plugins.javascriptrule.JavaScriptRule>
@@ -452,7 +454,7 @@ if (ziekenhuis == null) {
 
 
 var xml = &apos;&lt;FILL ME&gt;&apos;
-&#xd;logger.info(&quot;XML to be sent: &quot; + xml);
+&#xd;// logger.info(&quot;XML to be sent: &quot; + xml);
 channelMap.put(&quot;xml&quot;, xml);
 channelMap.put(&quot;statusCode&quot;, 200);</script>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
@@ -551,7 +553,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1751467124746</time>
+        <time>1755162948336</time>
         <timezone>Europe/Brussels</timezone>
       </lastModified>
       <pruningSettings>
